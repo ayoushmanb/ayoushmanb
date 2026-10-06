@@ -8,11 +8,25 @@ Here is the link to my personal profile [https://sites.google.com/view/ayoushman
 
 ## GitHub Stats 📈
 
-![](http://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=ayoushmanb&theme=github)
-<!-- ![](http://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=ayoushmanb&theme=github)-->
-![](./generated/contributed-languages.svg)
+<!--![](http://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=ayoushmanb&theme=github)
 ![](http://github-profile-summary-cards.vercel.app/api/cards/stats?username=ayoushmanb&theme=github)
+![](http://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=ayoushmanb&theme=github)-->
+<p align="center">
+  <img
+    src="https://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=ayoushmanb&theme=github"
+    width="65%"
+  />
+  <img
+    src="https://github-profile-summary-cards.vercel.app/api/cards/stats?username=ayoushmanb&theme=github"
+    width="32%"
+  />
+</p>
 
+![](./generated/contributed-languages.svg)
+![](./generated/contributed-file-languages.svg)
+
+
+<!-- ![](https://github-profile-summary-cards.vercel.app/api/cards/productive-time?username=ayoushmanb&theme=github&utcOffset=-5) -->
 
 ## Repository Overview 🗂️
 
