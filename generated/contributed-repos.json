@@ -1,0 +1,59 @@
+[
+  {
+    "repository": "subroy13/ggkodom",
+    "owner": "subroy13",
+    "external": true,
+    "primary_language": "R",
+    "commits": 6,
+    "pull_requests": 0,
+    "years": [
+      2026
+    ]
+  },
+  {
+    "repository": "ayoushmanb/ayoushmanb",
+    "owner": "ayoushmanb",
+    "external": false,
+    "primary_language": "Python",
+    "commits": 7,
+    "pull_requests": 0,
+    "years": [
+      2026
+    ]
+  },
+  {
+    "repository": "ayoushmanb/BrainNetworks_WSBM_SC_KM",
+    "owner": "ayoushmanb",
+    "external": false,
+    "primary_language": "MATLAB",
+    "commits": 19,
+    "pull_requests": 0,
+    "years": [
+      2025,
+      2026
+    ]
+  },
+  {
+    "repository": "ayoushmanb/hypergraph_subgraph",
+    "owner": "ayoushmanb",
+    "external": false,
+    "primary_language": "R",
+    "commits": 19,
+    "pull_requests": 0,
+    "years": [
+      2025,
+      2026
+    ]
+  },
+  {
+    "repository": "ayoushmanb/wwc_edu",
+    "owner": "ayoushmanb",
+    "external": false,
+    "primary_language": "R",
+    "commits": 28,
+    "pull_requests": 0,
+    "years": [
+      2026
+    ]
+  }
+]
