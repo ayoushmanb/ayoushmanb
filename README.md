@@ -9,8 +9,10 @@ Here is the link to my personal profile [https://sites.google.com/view/ayoushman
 ## GitHub Stats 📈
 
 ![](http://github-profile-summary-cards.vercel.app/api/cards/profile-details?username=ayoushmanb&theme=github)
-![](http://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=ayoushmanb&theme=github)
+<!-- ![](http://github-profile-summary-cards.vercel.app/api/cards/repos-per-language?username=ayoushmanb&theme=github)-->
+![](./generated/contributed-languages.svg)
 ![](http://github-profile-summary-cards.vercel.app/api/cards/stats?username=ayoushmanb&theme=github)
+
 
 ## Repository Overview 🗂️
 
