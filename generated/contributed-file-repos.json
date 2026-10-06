@@ -1,0 +1,87 @@
+{
+  "username": "ayoushmanb",
+  "repositories": [
+    {
+      "repository": "subroy13/ggkodom",
+      "owner": "subroy13",
+      "external": true,
+      "branch": "main",
+      "commits": 6,
+      "pull_requests": 0,
+      "years": [
+        2026
+      ],
+      "source_files": {
+        "R": 25
+      },
+      "total_source_files": 25
+    },
+    {
+      "repository": "ayoushmanb/ayoushmanb",
+      "owner": "ayoushmanb",
+      "external": false,
+      "branch": "main",
+      "commits": 9,
+      "pull_requests": 0,
+      "years": [
+        2026
+      ],
+      "source_files": {
+        "Python": 2
+      },
+      "total_source_files": 2
+    },
+    {
+      "repository": "ayoushmanb/BrainNetworks_WSBM_SC_KM",
+      "owner": "ayoushmanb",
+      "external": false,
+      "branch": "main",
+      "commits": 19,
+      "pull_requests": 0,
+      "years": [
+        2025,
+        2026
+      ],
+      "source_files": {
+        "MATLAB": 67
+      },
+      "total_source_files": 67
+    },
+    {
+      "repository": "ayoushmanb/hypergraph_subgraph",
+      "owner": "ayoushmanb",
+      "external": false,
+      "branch": "main",
+      "commits": 19,
+      "pull_requests": 0,
+      "years": [
+        2025,
+        2026
+      ],
+      "source_files": {
+        "R": 24
+      },
+      "total_source_files": 24
+    },
+    {
+      "repository": "ayoushmanb/wwc_edu",
+      "owner": "ayoushmanb",
+      "external": false,
+      "branch": "main",
+      "commits": 28,
+      "pull_requests": 0,
+      "years": [
+        2026
+      ],
+      "source_files": {
+        "R": 39
+      },
+      "total_source_files": 39
+    }
+  ],
+  "overall_file_counts": {
+    "R": 88,
+    "MATLAB": 67,
+    "Python": 2
+  }
+}
