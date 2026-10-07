@@ -1,87 +1,130 @@
 {
   "username": "ayoushmanb",
+  "definition": "Unique current source files on public default branches touched by commits authored by the user.",
   "repositories": [
-    {
-      "repository": "subroy13/ggkodom",
-      "owner": "subroy13",
-      "external": true,
-      "branch": "main",
-      "commits": 6,
-      "pull_requests": 0,
-      "years": [
-        2026
-      ],
-      "source_files": {
-        "R": 25
-      },
-      "total_source_files": 25
-    },
-    {
-      "repository": "ayoushmanb/ayoushmanb",
-      "owner": "ayoushmanb",
-      "external": false,
-      "branch": "main",
-      "commits": 9,
-      "pull_requests": 0,
-      "years": [
-        2026
-      ],
-      "source_files": {
-        "Python": 2
-      },
-      "total_source_files": 2
-    },
     {
       "repository": "ayoushmanb/BrainNetworks_WSBM_SC_KM",
       "owner": "ayoushmanb",
       "external": false,
       "branch": "main",
-      "commits": 19,
-      "pull_requests": 0,
       "years": [
         2025,
         2026
       ],
-      "source_files": {
-        "MATLAB": 67
+      "my_commits_on_default_branch": 19,
+      "my_source_files": {
+        "MATLAB": 11
       },
-      "total_source_files": 67
+      "total_my_source_files": 11,
+      "my_source_file_paths": [
+        "main_functions/atlas_comparison.m",
+        "main_functions/consensus.m",
+        "main_functions/find_optimal_comm_assignment.m",
+        "main_functions/fit_methods.m",
+        "main_functions/inter_comparison.m",
+        "main_functions/intra_comparison.m",
+        "simulation/simulation_fc_matrix.m",
+        "visualization/average_fcmatrix_plot.m",
+        "visualization/consensus_surface_plot.m",
+        "visualization/surface_plot.m",
+        "visualization/topology_detection.m"
+      ]
     },
     {
       "repository": "ayoushmanb/hypergraph_subgraph",
       "owner": "ayoushmanb",
       "external": false,
       "branch": "main",
-      "commits": 19,
-      "pull_requests": 0,
       "years": [
         2025,
         2026
       ],
-      "source_files": {
+      "my_commits_on_default_branch": 19,
+      "my_source_files": {
         "R": 24
       },
-      "total_source_files": 24
+      "total_my_source_files": 24,
+      "my_source_file_paths": [
+        "real_data/hypergraph_testing/real-data-twostar2-test.R",
+        "real_data/hypergraph_testing/real-data-type2-clustering-test.R",
+        "real_data/real-data-summary-stat-comp.R",
+        "real_data/sparse_graphon_testing/real-data-sparse-graphon-clus-coeff.R",
+        "real_data/sparse_graphon_testing/real-data-sparse-graphon-two-stars.R",
+        "simulation/additional_simulation/type_3_tri_df.R",
+        "simulation/additional_simulation/type_3_two_stars_df.R",
+        "simulation/sim-colorless-triangles-run.R",
+        "simulation/sim-type2-clustering-coeff-run.R",
+        "simulation/sim-type2-triangle-run.R",
+        "simulation/sim-type2-twostar-run.R",
+        "simulation/sim-type3-clustering-coeff-run.R",
+        "simulation/sim-type3-triangle-run.R",
+        "support_functions/real-data-sparse-graphon-clus-coeff-supp.R",
+        "support_functions/real-data-sparse-graphon-two-stars-supp.R",
+        "support_functions/real-data-twostar2-test-supp.R",
+        "support_functions/real-data-type2-clustering-test-supp.R",
+        "support_functions/sim-colorless-triangles-supp.R",
+        "support_functions/sim-type2-clustering-coeff-supp.R",
+        "support_functions/sim-type2-triangle-supp.R",
+        "support_functions/sim-type2-twostar-supp.R",
+        "support_functions/sim-type3-clustering-coeff-supp.R",
+        "support_functions/sim-type3-triangle-supp.R",
+        "support_functions/summary-stat-supp.R"
+      ]
     },
     {
       "repository": "ayoushmanb/wwc_edu",
       "owner": "ayoushmanb",
       "external": false,
       "branch": "main",
-      "commits": 28,
-      "pull_requests": 0,
       "years": [
         2026
       ],
-      "source_files": {
-        "R": 39
+      "my_commits_on_default_branch": 28,
+      "my_source_files": {
+        "R": 35
       },
-      "total_source_files": 39
+      "total_my_source_files": 35,
+      "my_source_file_paths": [
+        "archive/AB/01_data_prep.R",
+        "archive/AB/02_.R",
+        "archive/AB/EDA_v1.R",
+        "archive/AB/NAEP_plots.R",
+        "archive/AB/abbreviation.R",
+        "archive/AB/baseline_model.R",
+        "archive/AB/baseline_model_v2.R",
+        "archive/AB/baseline_model_v3.R",
+        "archive/AB/bipartite_v1.R",
+        "archive/AB/bipartite_v2.R",
+        "archive/AB/bipartite_v3.R",
+        "archive/AB/categoty_outcome_domain.R",
+        "archive/AB/code_v1.Rmd",
+        "archive/AB/effectiveness.R",
+        "archive/AB/enrollment_projection_v1.R",
+        "archive/AB/new_01.R",
+        "archive/AB/new_02.R",
+        "archive/AB/new_03.R",
+        "archive/AB/race_ethnicity_plot.R",
+        "eda/bipartite_row_col_type_v1.R",
+        "eda/color_heatmap_v1.R",
+        "eda/data_counts.R",
+        "eda/plot_signf_contingency.R",
+        "eda/plot_signf_contingency_majority.R",
+        "eda/relational.R",
+        "eda/statewise_plot.R",
+        "eda/statewise_plot_majority.R",
+        "scripts/enrollment_projection_v2.R",
+        "scripts/save_eda_plots.R",
+        "store_files/data_info/all_contingency_tales.Rmd",
+        "store_files/data_info/draftv1.Rmd",
+        "store_files/data_info/eda_summary.Rmd",
+        "utils/data_cleaning.R",
+        "utils/intervention_protocol_outcome_grouping.R",
+        "utils/race_ethnicity_majority.R"
+      ]
     }
   ],
   "overall_file_counts": {
-    "R": 88,
-    "MATLAB": 67,
-    "Python": 2
+    "R": 59,
+    "MATLAB": 11
   }
 }
