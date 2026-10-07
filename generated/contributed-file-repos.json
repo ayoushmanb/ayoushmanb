@@ -1,9 +1,35 @@
 {
   "username": "ayoushmanb",
-  "definition": "Unique recognized source-file paths touched by commits authored by the user in public repositories. Commits are searched across all current repository branches and deduplicated by commit SHA. File paths are deduplicated within each repository.",
-  "candidate_repository_count": 4,
-  "counted_repository_count": 4,
+  "definition": "Unique recognized source-file paths touched by commits authored by the user in public repositories. Includes public repositories owned by the user and public repositories owned by others. Private repositories are excluded. Commits are searched across all current repository branches and deduplicated by commit SHA. File paths are deduplicated within each repository.",
+  "candidate_repository_count": 5,
+  "counted_repository_count": 5,
   "repositories": [
+    {
+      "repository": "ayoushmanb/ayoushmanb",
+      "owner": "ayoushmanb",
+      "external": false,
+      "default_branch": "main",
+      "discovery_sources": [
+        "historical_commit_contribution",
+        "owned_public_repo"
+      ],
+      "contribution_years": [
+        2026
+      ],
+      "branches_scanned": [
+        "main"
+      ],
+      "my_commits_found": 15,
+      "my_source_files": {
+        "Python": 2
+      },
+      "total_my_source_files": 2,
+      "my_source_file_paths": [
+        "scripts/contributed_file_languages.py",
+        "scripts/contributed_languages.py"
+      ],
+      "status": "counted"
+    },
     {
       "repository": "ayoushmanb/BrainNetworks_WSBM_SC_KM",
       "owner": "ayoushmanb",
@@ -194,6 +220,7 @@
   ],
   "overall_file_counts": {
     "R": 76,
-    "MATLAB": 11
+    "MATLAB": 11,
+    "Python": 2
   }
 }
