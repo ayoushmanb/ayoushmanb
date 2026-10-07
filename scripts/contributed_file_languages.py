@@ -22,24 +22,25 @@ REST_API = "https://api.github.com"
 OUT = Path("generated")
 OUT.mkdir(exist_ok=True)
 
-PROFILE_REPO = f"{USERNAME}/{USERNAME}".lower()
-
 
 # ============================================================
 # Programming-language extensions
 # ============================================================
 
 LANGUAGE_EXTENSIONS = {
+    # Python
     ".py": "Python",
     ".pyx": "Python",
 
+    # R
     ".r": "R",
     ".rmd": "R",
 
+    # MATLAB
     ".m": "MATLAB",
 
+    # C / C++
     ".c": "C",
-
     ".cpp": "C++",
     ".cc": "C++",
     ".cxx": "C++",
@@ -47,36 +48,52 @@ LANGUAGE_EXTENSIONS = {
     ".hh": "C++",
     ".hxx": "C++",
 
+    # Java
     ".java": "Java",
 
+    # Julia
     ".jl": "Julia",
 
+    # JavaScript / TypeScript
     ".js": "JavaScript",
     ".jsx": "JavaScript",
-
     ".ts": "TypeScript",
     ".tsx": "TypeScript",
 
+    # Shell
     ".sh": "Shell",
     ".bash": "Shell",
     ".zsh": "Shell",
 
+    # SQL
     ".sql": "SQL",
 
+    # Rust
     ".rs": "Rust",
+
+    # Go
     ".go": "Go",
+
+    # C#
     ".cs": "C#",
 
+    # Scala
     ".scala": "Scala",
+
+    # Ruby
     ".rb": "Ruby",
 
+    # Swift
     ".swift": "Swift",
 
+    # Kotlin
     ".kt": "Kotlin",
     ".kts": "Kotlin",
 
+    # TeX
     ".tex": "TeX",
 
+    # Jupyter
     ".ipynb": "Jupyter Notebook",
 }
 
@@ -106,7 +123,7 @@ LANGUAGE_COLORS = {
 
 
 # ============================================================
-# Directories/files that should not count
+# Directories/files we do not want to count
 # ============================================================
 
 EXCLUDED_DIRS = {
@@ -137,7 +154,7 @@ EXCLUDED_DIRS = {
 
 
 # ============================================================
-# GitHub API helpers
+# GitHub GraphQL helper
 # ============================================================
 
 def graphql(query, variables):
@@ -174,6 +191,10 @@ def graphql(query, variables):
     return result["data"]
 
 
+# ============================================================
+# GitHub REST helper
+# ============================================================
+
 def github_rest(path, params=None):
 
     url = REST_API + path
@@ -197,6 +218,10 @@ def github_rest(path, params=None):
         return json.load(response)
 
 
+# ============================================================
+# Encode owner/repository safely for GitHub REST URLs
+# ============================================================
+
 def encoded_repo_name(repo_name):
 
     return "/".join(
@@ -219,6 +244,7 @@ def excluded_file(path):
     if set(path_obj.parts) & EXCLUDED_DIRS:
         return True
 
+    # Ignore bundled/minified JavaScript-like files
     if ".min." in path_obj.name.lower():
         return True
 
@@ -238,14 +264,14 @@ def file_language(path):
 # ============================================================
 # Candidate repositories
 #
-# We intentionally discover repositories in several ways:
+# We discover repositories using several mechanisms:
 #
-# 1. All public repositories owned by the user
-# 2. repositoriesContributedTo
-# 3. Historical commit-contribution collections
-# 4. Historical PR-contribution collections
+# 1. ALL public repositories owned by the user
+# 2. Public repositoriesContributedTo repositories
+# 3. Historical commit-contribution repositories
+# 4. Historical pull-request contribution repositories
 #
-# This makes discovery substantially less restrictive.
+# PRIVATE REPOSITORIES ARE ALWAYS EXCLUDED.
 # ============================================================
 
 repos = {}
@@ -260,9 +286,6 @@ def add_candidate_repo(
 ):
 
     if not name:
-        return
-
-    if name.lower() == PROFILE_REPO:
         return
 
     if not branch:
@@ -285,7 +308,10 @@ def add_candidate_repo(
 
 
 # ============================================================
-# 1. ALL public repositories owned by me
+# 1. Discover ALL PUBLIC repositories owned by me
+#
+# IMPORTANT:
+# ayoushmanb/ayoushmanb IS INCLUDED.
 # ============================================================
 
 def discover_owned_public_repositories():
@@ -313,13 +339,14 @@ def discover_owned_public_repositories():
 
         for repo in data:
 
+            # ------------------------------------------------
+            # PRIVATE repositories remain excluded
+            # ------------------------------------------------
+
             if repo.get("private"):
                 continue
 
             name = repo["full_name"]
-
-            if name.lower() == PROFILE_REPO:
-                continue
 
             add_candidate_repo(
                 name=name,
@@ -335,7 +362,8 @@ def discover_owned_public_repositories():
 
 
 # ============================================================
-# 2. repositoriesContributedTo
+# 2. Discover PUBLIC external repositories through
+#    repositoriesContributedTo
 # ============================================================
 
 def discover_repositories_contributed_to():
@@ -408,6 +436,10 @@ def discover_repositories_contributed_to():
 
         for repo in connection["nodes"]:
 
+            # ------------------------------------------------
+            # PRIVATE third-party repositories remain excluded
+            # ------------------------------------------------
+
             if repo["isPrivate"]:
                 continue
 
@@ -434,7 +466,7 @@ def discover_repositories_contributed_to():
 
 
 # ============================================================
-# 3/4. Historical contribution collections
+# Contribution years
 # ============================================================
 
 def get_contribution_years():
@@ -468,6 +500,10 @@ def get_contribution_years():
         "contributionYears"
     ]
 
+
+# ============================================================
+# 3/4. Historical commit + PR contribution repositories
+# ============================================================
 
 def discover_historical_contributions():
 
@@ -568,6 +604,10 @@ def discover_historical_contributions():
             "contributionsCollection"
         ]
 
+        # ----------------------------------------------------
+        # Commit contribution repositories
+        # ----------------------------------------------------
+
         for item in collection[
             "commitContributionsByRepository"
         ]:
@@ -591,6 +631,10 @@ def discover_historical_contributions():
                 source="historical_commit_contribution",
                 year=year,
             )
+
+        # ----------------------------------------------------
+        # Pull-request contribution repositories
+        # ----------------------------------------------------
 
         for item in collection[
             "pullRequestContributionsByRepository"
@@ -636,12 +680,12 @@ print(
 
 
 # ============================================================
-# Get ALL current branches of a repository
+# Get ALL current branches in a repository
 #
-# We scan all current branches rather than only main/master.
+# We search more than just "main".
 #
-# This matters if your authored commits live on a feature
-# branch and are not directly reachable from the default branch.
+# This allows us to find authored commits on feature branches,
+# gh-pages, or other current branches.
 # ============================================================
 
 def get_branches(repo_name):
@@ -681,7 +725,7 @@ def get_branches(repo_name):
 
 
 # ============================================================
-# Find commits authored by ME on one branch
+# Get MY commits on one branch
 # ============================================================
 
 def get_my_commits_on_branch(
@@ -723,11 +767,10 @@ def get_my_commits_on_branch(
 
 
 # ============================================================
-# Find ALL unique commits authored by me that are reachable
-# from at least one current branch.
+# Get ALL unique commits authored by me
 #
-# The same commit can appear on many branches, therefore
-# commits are deduplicated by SHA.
+# Same commit may exist on several branches.
+# Deduplicate using commit SHA.
 # ============================================================
 
 def get_all_my_commits(
@@ -739,7 +782,6 @@ def get_all_my_commits(
         repo_name
     )
 
-    # Safety: make sure the default branch is included.
     if (
         default_branch
         and default_branch not in branches
@@ -795,10 +837,7 @@ def get_all_my_commits(
 
 
 # ============================================================
-# Files changed by one commit
-#
-# GitHub's commit endpoint returns its changed-file list.
-# It may be paginated for large commits.
+# Get files changed by one commit
 # ============================================================
 
 def get_commit_files(
@@ -842,17 +881,15 @@ def get_commit_files(
 
 
 # ============================================================
-# Find unique source-file paths touched by my commits
+# Find UNIQUE source-file paths personally touched by me
 #
-# IMPORTANT:
+# Examples:
 #
-# - Same file edited 50 times -> counted once
-# - Same commit reachable from 5 branches -> counted once
-# - Same file path in two different repos -> one file per repo
+# model.R changed in 20 commits -> 1 file
 #
-# We use "filename", not "previous_filename", so a rename
-# does not automatically count both old and new names from
-# the same rename record.
+# same commit visible on main + feature branch -> 1 commit
+#
+# same filename in different repositories -> counted separately
 # ============================================================
 
 def get_my_source_files(
@@ -913,9 +950,11 @@ def get_my_source_files(
             if not filename:
                 continue
 
-            if file_language(
+            language = file_language(
                 filename
-            ) is None:
+            )
+
+            if language is None:
                 continue
 
             touched_files.add(
@@ -930,7 +969,7 @@ def get_my_source_files(
 
 
 # ============================================================
-# Process every candidate repository
+# Process candidate repositories
 # ============================================================
 
 overall_file_counts = Counter()
@@ -1079,7 +1118,9 @@ for repo_name in sorted(
 
     except urllib.error.HTTPError as exc:
 
-        result["status"] = (
+        result[
+            "status"
+        ] = (
             f"http_error_{exc.code}"
         )
 
@@ -1090,7 +1131,9 @@ for repo_name in sorted(
 
     except Exception as exc:
 
-        result["status"] = (
+        result[
+            "status"
+        ] = (
             f"error: {exc}"
         )
 
@@ -1104,7 +1147,7 @@ for repo_name in sorted(
 
 
 # ============================================================
-# Repositories actually represented in the card
+# Repositories represented in the card
 # ============================================================
 
 counted_repos = [
@@ -1117,12 +1160,12 @@ counted_repos = [
 
 
 # ============================================================
-# Save detailed audit JSON
+# Save detailed JSON audit
 #
-# IMPORTANT:
+# ALL candidate public repositories remain in this file,
+# even if no files were ultimately counted.
 #
-# We save ALL candidates here, including repos with zero
-# counted files. This lets us diagnose why a repo disappeared.
+# Private repos never enter this structure.
 # ============================================================
 
 audit = {
@@ -1133,7 +1176,10 @@ audit = {
         (
             "Unique recognized source-file paths touched "
             "by commits authored by the user in public "
-            "repositories. Commits are searched across all "
+            "repositories. Includes public repositories "
+            "owned by the user and public repositories "
+            "owned by others. Private repositories are "
+            "excluded. Commits are searched across all "
             "current repository branches and deduplicated "
             "by commit SHA. File paths are deduplicated "
             "within each repository."
@@ -1170,7 +1216,7 @@ with open(
 
 
 # ============================================================
-# SVG data
+# Prepare SVG data
 # ============================================================
 
 total_files = sum(
@@ -1503,17 +1549,17 @@ for language, count in (
 
 print()
 print(
-    f"Candidate repositories: "
+    f"Candidate public repositories: "
     f"{len(all_repo_results)}"
 )
 
 print(
-    f"Repositories counted: "
+    f"Public repositories counted: "
     f"{repo_count}"
 )
 
 print(
-    f"External repositories counted: "
+    f"External public repositories counted: "
     f"{external_repo_count}"
 )
 
