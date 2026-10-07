@@ -1,17 +1,26 @@
 {
   "username": "ayoushmanb",
-  "definition": "Unique current source files on public default branches touched by commits authored by the user.",
+  "definition": "Unique recognized source-file paths touched by commits authored by the user in public repositories. Commits are searched across all current repository branches and deduplicated by commit SHA. File paths are deduplicated within each repository.",
+  "candidate_repository_count": 4,
+  "counted_repository_count": 4,
   "repositories": [
     {
       "repository": "ayoushmanb/BrainNetworks_WSBM_SC_KM",
       "owner": "ayoushmanb",
       "external": false,
-      "branch": "main",
-      "years": [
+      "default_branch": "main",
+      "discovery_sources": [
+        "historical_commit_contribution",
+        "owned_public_repo"
+      ],
+      "contribution_years": [
         2025,
         2026
       ],
-      "my_commits_on_default_branch": 19,
+      "branches_scanned": [
+        "main"
+      ],
+      "my_commits_found": 19,
       "my_source_files": {
         "MATLAB": 11
       },
@@ -28,18 +37,26 @@
         "visualization/consensus_surface_plot.m",
         "visualization/surface_plot.m",
         "visualization/topology_detection.m"
-      ]
+      ],
+      "status": "counted"
     },
     {
       "repository": "ayoushmanb/hypergraph_subgraph",
       "owner": "ayoushmanb",
       "external": false,
-      "branch": "main",
-      "years": [
+      "default_branch": "main",
+      "discovery_sources": [
+        "historical_commit_contribution",
+        "owned_public_repo"
+      ],
+      "contribution_years": [
         2025,
         2026
       ],
-      "my_commits_on_default_branch": 19,
+      "branches_scanned": [
+        "main"
+      ],
+      "my_commits_found": 19,
       "my_source_files": {
         "R": 24
       },
@@ -69,21 +86,29 @@
         "support_functions/sim-type3-clustering-coeff-supp.R",
         "support_functions/sim-type3-triangle-supp.R",
         "support_functions/summary-stat-supp.R"
-      ]
+      ],
+      "status": "counted"
     },
     {
       "repository": "ayoushmanb/wwc_edu",
       "owner": "ayoushmanb",
       "external": false,
-      "branch": "main",
-      "years": [
+      "default_branch": "main",
+      "discovery_sources": [
+        "historical_commit_contribution",
+        "owned_public_repo"
+      ],
+      "contribution_years": [
         2026
       ],
-      "my_commits_on_default_branch": 28,
+      "branches_scanned": [
+        "main"
+      ],
+      "my_commits_found": 28,
       "my_source_files": {
-        "R": 35
+        "R": 50
       },
-      "total_my_source_files": 35,
+      "total_my_source_files": 50,
       "my_source_file_paths": [
         "archive/AB/01_data_prep.R",
         "archive/AB/02_.R",
@@ -104,27 +129,71 @@
         "archive/AB/new_02.R",
         "archive/AB/new_03.R",
         "archive/AB/race_ethnicity_plot.R",
+        "archive/EDA_v1.R",
+        "archive/code_v1.Rmd",
+        "eda/NAEP_plots.R",
         "eda/bipartite_row_col_type_v1.R",
+        "eda/bipartite_v1.R",
+        "eda/bipartite_v2.R",
+        "eda/bipartite_v3.R",
         "eda/color_heatmap_v1.R",
         "eda/data_counts.R",
         "eda/plot_signf_contingency.R",
         "eda/plot_signf_contingency_majority.R",
+        "eda/race_ethnicity_plot.R",
         "eda/relational.R",
         "eda/statewise_plot.R",
         "eda/statewise_plot_majority.R",
+        "scripts/effectiveness.R",
+        "scripts/enrollment_projection_v1.R",
         "scripts/enrollment_projection_v2.R",
         "scripts/save_eda_plots.R",
+        "store_files/all_contingency_tales.Rmd",
         "store_files/data_info/all_contingency_tales.Rmd",
         "store_files/data_info/draftv1.Rmd",
         "store_files/data_info/eda_summary.Rmd",
+        "store_files/draftv1.Rmd",
+        "store_files/eda_summary.Rmd",
+        "utils/abbreviation.R",
+        "utils/categoty_outcome_domain.R",
+        "utils/col_exlcusion.R",
         "utils/data_cleaning.R",
         "utils/intervention_protocol_outcome_grouping.R",
         "utils/race_ethnicity_majority.R"
-      ]
+      ],
+      "status": "counted"
+    },
+    {
+      "repository": "subroy13/ggkodom",
+      "owner": "subroy13",
+      "external": true,
+      "default_branch": "main",
+      "discovery_sources": [
+        "historical_commit_contribution",
+        "repositoriesContributedTo"
+      ],
+      "contribution_years": [
+        2026
+      ],
+      "branches_scanned": [
+        "gh-pages",
+        "main",
+        "washu-datathon-2026"
+      ],
+      "my_commits_found": 5,
+      "my_source_files": {
+        "R": 2
+      },
+      "total_my_source_files": 2,
+      "my_source_file_paths": [
+        "ggkodom_image/kodom_image.R",
+        "scripts/eda_ab_pp.R"
+      ],
+      "status": "counted"
     }
   ],
   "overall_file_counts": {
-    "R": 59,
+    "R": 76,
     "MATLAB": 11
   }
 }
