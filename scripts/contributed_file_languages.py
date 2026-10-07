@@ -23,23 +23,20 @@ OUT.mkdir(exist_ok=True)
 
 
 # ============================================================
-# File extensions that we count as source-code languages
+# Languages we want to count
 # ============================================================
 
 LANGUAGE_EXTENSIONS = {
-    # Python
     ".py": "Python",
     ".pyx": "Python",
 
-    # R
     ".r": "R",
     ".rmd": "R",
 
-    # MATLAB
     ".m": "MATLAB",
 
-    # C / C++
     ".c": "C",
+
     ".cpp": "C++",
     ".cc": "C++",
     ".cxx": "C++",
@@ -47,56 +44,37 @@ LANGUAGE_EXTENSIONS = {
     ".hh": "C++",
     ".hxx": "C++",
 
-    # Java
     ".java": "Java",
 
-    # Julia
     ".jl": "Julia",
 
-    # JavaScript / TypeScript
     ".js": "JavaScript",
     ".jsx": "JavaScript",
+
     ".ts": "TypeScript",
     ".tsx": "TypeScript",
 
-    # Shell
     ".sh": "Shell",
     ".bash": "Shell",
     ".zsh": "Shell",
 
-    # SQL
     ".sql": "SQL",
 
-    # Rust
     ".rs": "Rust",
-
-    # Go
     ".go": "Go",
-
-    # C#
     ".cs": "C#",
 
-    # Scala
     ".scala": "Scala",
 
-    # Ruby
     ".rb": "Ruby",
 
-    # Perl
-    ".pl": "Perl",
-    ".pm": "Perl",
-
-    # Swift
     ".swift": "Swift",
 
-    # Kotlin
     ".kt": "Kotlin",
     ".kts": "Kotlin",
 
-    # TeX
     ".tex": "TeX",
 
-    # Jupyter notebooks
     ".ipynb": "Jupyter Notebook",
 }
 
@@ -118,7 +96,6 @@ LANGUAGE_COLORS = {
     "C#": "#178600",
     "Scala": "#c22d40",
     "Ruby": "#701516",
-    "Perl": "#0298c3",
     "Swift": "#F05138",
     "Kotlin": "#A97BFF",
     "TeX": "#3D6117",
@@ -127,12 +104,13 @@ LANGUAGE_COLORS = {
 
 
 # ============================================================
-# Directories we do NOT want to count
+# Ignore generated / dependency directories
 # ============================================================
 
 EXCLUDED_DIRS = {
     ".git",
     ".github",
+    "generated",
 
     "node_modules",
 
@@ -152,7 +130,6 @@ EXCLUDED_DIRS = {
     ".mypy_cache",
 
     "site-packages",
-
     "target",
 }
 
@@ -174,7 +151,7 @@ def graphql(query, variables):
         headers={
             "Authorization": f"Bearer {TOKEN}",
             "Content-Type": "application/json",
-            "User-Agent": "github-contributed-file-language-card",
+            "User-Agent": "github-my-file-language-card",
         },
     )
 
@@ -193,14 +170,19 @@ def graphql(query, variables):
 # GitHub REST helper
 # ============================================================
 
-def github_rest(path):
+def github_rest(path, params=None):
+
+    url = REST_API + path
+
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
 
     request = urllib.request.Request(
-        REST_API + path,
+        url,
         headers={
             "Authorization": f"Bearer {TOKEN}",
             "Accept": "application/vnd.github+json",
-            "User-Agent": "github-contributed-file-language-card",
+            "User-Agent": "github-my-file-language-card",
         },
     )
 
@@ -209,18 +191,15 @@ def github_rest(path):
 
 
 # ============================================================
-# Find years in which the user contributed
+# Find contribution years
 # ============================================================
 
 year_query = """
 query($login: String!) {
-
   user(login: $login) {
-
     contributionsCollection {
       contributionYears
     }
-
   }
 }
 """
@@ -242,14 +221,14 @@ print("Contribution years:", years)
 
 
 # ============================================================
-# Repository information
+# Discover public repositories where I have commit
+# contributions
 # ============================================================
 
 repo_fragment = """
 repository {
 
   nameWithOwner
-
   isPrivate
 
   owner {
@@ -302,18 +281,6 @@ query(
 
       }}
 
-      pullRequestContributionsByRepository(
-          maxRepositories: 100
-      ) {{
-
-        {repo_fragment}
-
-        contributions(first: 1) {{
-          totalCount
-        }}
-
-      }}
-
     }}
 
   }}
@@ -322,26 +289,41 @@ query(
 """
 
 
-# ============================================================
-# Collect contributed repositories
-# ============================================================
-
 repos = {}
 
 
-def add_repo(item, contribution_type, year):
+def add_repo(item, year):
 
     repo = item["repository"]
+
+    # --------------------------------------------------------
+    # Public repositories only
+    # --------------------------------------------------------
 
     if repo["isPrivate"]:
         return
 
-    branch = repo.get("defaultBranchRef")
+    # --------------------------------------------------------
+    # Do not count the GitHub profile repository itself.
+    #
+    # Otherwise scripts/contributed_*.py would artificially
+    # add Python to the card.
+    # --------------------------------------------------------
 
-    if branch is None:
+    if (
+        repo["nameWithOwner"].lower()
+        == f"{USERNAME}/{USERNAME}".lower()
+    ):
         return
 
-    target = branch.get("target")
+    default_branch = repo.get(
+        "defaultBranchRef"
+    )
+
+    if default_branch is None:
+        return
+
+    target = default_branch.get("target")
 
     if target is None:
         return
@@ -358,33 +340,20 @@ def add_repo(item, contribution_type, year):
         repos[name] = {
             "name": name,
             "owner": repo["owner"]["login"],
-            "branch": branch["name"],
+            "branch": default_branch["name"],
             "tree_oid": tree["oid"],
-
-            "commit_count": 0,
-            "pr_count": 0,
-
             "years": set(),
         }
-
-    count = item[
-        "contributions"
-    ][
-        "totalCount"
-    ]
-
-    if contribution_type == "commit":
-        repos[name]["commit_count"] += count
-
-    elif contribution_type == "pr":
-        repos[name]["pr_count"] += count
 
     repos[name]["years"].add(year)
 
 
 for year in years:
 
-    print(f"Reading contribution history for {year}...")
+    print(
+        f"Finding contributed repositories "
+        f"for {year}..."
+    )
 
     data = graphql(
         contribution_query,
@@ -404,112 +373,318 @@ for year in years:
     for item in collection[
         "commitContributionsByRepository"
     ]:
-        add_repo(
-            item,
-            "commit",
-            year,
-        )
 
-    for item in collection[
-        "pullRequestContributionsByRepository"
-    ]:
         add_repo(
             item,
-            "pr",
             year,
         )
 
 
 # ============================================================
-# Decide whether a file should be excluded
+# Helpers
 # ============================================================
+
+def encoded_repo_name(repo_name):
+
+    return "/".join(
+        urllib.parse.quote(
+            part,
+            safe="",
+        )
+        for part in repo_name.split("/")
+    )
+
 
 def excluded_file(path):
 
     path_obj = Path(path)
 
-    parts = set(path_obj.parts)
-
-    if parts & EXCLUDED_DIRS:
+    if set(path_obj.parts) & EXCLUDED_DIRS:
         return True
 
-    name = path_obj.name.lower()
-
-    # Common bundled/minified files
-    if ".min." in name:
+    if ".min." in path_obj.name.lower():
         return True
 
     return False
 
 
+def file_language(path):
+
+    if excluded_file(path):
+        return None
+
+    extension = Path(
+        path
+    ).suffix.lower()
+
+    return LANGUAGE_EXTENSIONS.get(
+        extension
+    )
+
+
 # ============================================================
-# Count source files in one repository
+# Get the files that CURRENTLY exist in the repository
 # ============================================================
 
-def count_repo_files(repo_name, tree_oid):
+def get_current_files(
+    repo_name,
+    tree_oid,
+):
 
-    encoded_repo = "/".join(
-        urllib.parse.quote(part, safe="")
-        for part in repo_name.split("/")
+    encoded_repo = encoded_repo_name(
+        repo_name
     )
 
     data = github_rest(
         f"/repos/{encoded_repo}/git/trees/"
-        f"{tree_oid}?recursive=1"
+        f"{tree_oid}",
+        {
+            "recursive": "1",
+        },
     )
 
     if data.get("truncated"):
+
         print(
-            f"WARNING: GitHub truncated the tree "
-            f"for {repo_name}"
+            "WARNING: repository tree "
+            f"was truncated for {repo_name}"
         )
 
-    counts = Counter()
+    current_files = set()
 
-    for item in data.get("tree", []):
+    for item in data.get(
+        "tree",
+        [],
+    ):
 
         if item.get("type") != "blob":
             continue
 
         path = item["path"]
 
-        if excluded_file(path):
+        if file_language(path) is None:
             continue
 
-        extension = Path(path).suffix.lower()
+        current_files.add(path)
 
-        language = LANGUAGE_EXTENSIONS.get(
-            extension
+    return current_files
+
+
+# ============================================================
+# Find commits authored by ME on the default branch
+# ============================================================
+
+def get_my_commits(
+    repo_name,
+    branch,
+):
+
+    encoded_repo = encoded_repo_name(
+        repo_name
+    )
+
+    commits = []
+
+    page = 1
+
+    while True:
+
+        data = github_rest(
+            f"/repos/{encoded_repo}/commits",
+            {
+                "author": USERNAME,
+                "sha": branch,
+                "per_page": 100,
+                "page": page,
+            },
         )
 
-        if language is not None:
-            counts[language] += 1
+        if not data:
+            break
 
-    return counts
+        commits.extend(data)
+
+        if len(data) < 100:
+            break
+
+        page += 1
+
+    return commits
 
 
 # ============================================================
-# Count source files across all contributed repositories
+# Get files changed in one commit
 # ============================================================
 
-file_language_counts = Counter()
+def get_commit_files(
+    repo_name,
+    sha,
+):
+
+    encoded_repo = encoded_repo_name(
+        repo_name
+    )
+
+    files = []
+
+    page = 1
+
+    while True:
+
+        data = github_rest(
+            f"/repos/{encoded_repo}/commits/{sha}",
+            {
+                "per_page": 100,
+                "page": page,
+            },
+        )
+
+        page_files = data.get(
+            "files",
+            [],
+        )
+
+        files.extend(
+            page_files
+        )
+
+        if len(page_files) < 100:
+            break
+
+        page += 1
+
+    return files
+
+
+# ============================================================
+# Find UNIQUE current source files touched by my commits
+# ============================================================
+
+def get_my_source_files(
+    repo_name,
+    branch,
+    tree_oid,
+):
+
+    current_files = get_current_files(
+        repo_name,
+        tree_oid,
+    )
+
+    my_commits = get_my_commits(
+        repo_name,
+        branch,
+    )
+
+    print(
+        f"  {len(my_commits)} commits "
+        f"authored by {USERNAME}"
+    )
+
+    touched_paths = set()
+
+    for i, commit in enumerate(
+        my_commits,
+        start=1,
+    ):
+
+        sha = commit["sha"]
+
+        print(
+            f"    commit "
+            f"{i}/{len(my_commits)} "
+            f"{sha[:8]}"
+        )
+
+        files = get_commit_files(
+            repo_name,
+            sha,
+        )
+
+        for file_info in files:
+
+            filename = file_info.get(
+                "filename"
+            )
+
+            if filename:
+                touched_paths.add(
+                    filename
+                )
+
+            # A renamed file may have both paths.
+            previous = file_info.get(
+                "previous_filename"
+            )
+
+            if previous:
+                touched_paths.add(
+                    previous
+                )
+
+    # --------------------------------------------------------
+    # Keep only files that:
+    #
+    # 1. I touched
+    # 2. still exist on the current default branch
+    # 3. are recognized source-code files
+    #
+    # This also removes historical/deleted file paths.
+    # --------------------------------------------------------
+
+    my_current_files = (
+        touched_paths
+        & current_files
+    )
+
+    return (
+        my_current_files,
+        len(my_commits),
+    )
+
+
+# ============================================================
+# Build personal file-language statistics
+# ============================================================
+
+overall_file_counts = Counter()
 
 result_repos = []
 
 
 for repo in repos.values():
 
+    print()
     print(
-        f"Counting source files in "
+        "Processing "
         f"{repo['name']}..."
     )
 
-    counts = count_repo_files(
-        repo["name"],
-        repo["tree_oid"],
+    my_files, commit_count = (
+        get_my_source_files(
+            repo["name"],
+            repo["branch"],
+            repo["tree_oid"],
+        )
     )
 
-    file_language_counts.update(counts)
+    repo_counts = Counter()
+
+    for path in my_files:
+
+        language = file_language(
+            path
+        )
+
+        if language is not None:
+
+            repo_counts[
+                language
+            ] += 1
+
+            overall_file_counts[
+                language
+            ] += 1
 
     external = (
         repo["owner"].lower()
@@ -517,7 +692,6 @@ for repo in repos.values():
     )
 
     result_repos.append({
-
         "repository":
             repo["name"],
 
@@ -530,23 +704,26 @@ for repo in repos.values():
         "branch":
             repo["branch"],
 
-        "commits":
-            repo["commit_count"],
-
-        "pull_requests":
-            repo["pr_count"],
-
         "years":
-            sorted(repo["years"]),
-
-        "source_files":
-            dict(
-                counts.most_common()
+            sorted(
+                repo["years"]
             ),
 
-        "total_source_files":
-            sum(counts.values()),
+        "my_commits_on_default_branch":
+            commit_count,
 
+        "my_source_files":
+            dict(
+                repo_counts.most_common()
+            ),
+
+        "total_my_source_files":
+            len(my_files),
+
+        # Useful for checking that the script
+        # really counted only files you touched.
+        "my_source_file_paths":
+            sorted(my_files),
     })
 
 
@@ -559,7 +736,20 @@ result_repos.sort(
 
 
 # ============================================================
-# Save audit information
+# Remove repositories where no qualifying source file was found
+# ============================================================
+
+result_repos_with_files = [
+    repo
+    for repo in result_repos
+    if repo[
+        "total_my_source_files"
+    ] > 0
+]
+
+
+# ============================================================
+# Save audit JSON
 # ============================================================
 
 with open(
@@ -569,14 +759,24 @@ with open(
 
     json.dump(
         {
-            "username": USERNAME,
+            "username":
+                USERNAME,
+
+            "definition":
+                (
+                    "Unique current source files "
+                    "on public default branches "
+                    "touched by commits authored "
+                    "by the user."
+                ),
 
             "repositories":
-                result_repos,
+                result_repos_with_files,
 
             "overall_file_counts":
                 dict(
-                    file_language_counts.most_common()
+                    overall_file_counts
+                    .most_common()
                 ),
         },
         f,
@@ -585,47 +785,40 @@ with open(
 
 
 # ============================================================
-# Prepare SVG data
+# Prepare SVG
 # ============================================================
+
+total_files = sum(
+    overall_file_counts.values()
+)
+
+repo_count = len(
+    result_repos_with_files
+)
+
+external_repo_count = sum(
+    repo["external"]
+    for repo in result_repos_with_files
+)
+
 
 MAX_LANGUAGES = 8
 
-top_languages = (
-    file_language_counts
-    .most_common(MAX_LANGUAGES)
-)
-
-total_files = sum(
-    file_language_counts.values()
-)
-
-repos_with_files = sum(
-    repo["total_source_files"] > 0
-    for repo in result_repos
-)
-
-external_repos = sum(
-    repo["external"]
-    and repo["total_source_files"] > 0
-    for repo in result_repos
+ranked = overall_file_counts.most_common(
+    MAX_LANGUAGES
 )
 
 
 WIDTH = 495
-
 ROW_HEIGHT = 30
 
 HEIGHT = max(
     210,
     145
     + ROW_HEIGHT
-    * len(top_languages)
+    * len(ranked),
 )
 
-
-# ============================================================
-# SVG helper
-# ============================================================
 
 def txt(
     x,
@@ -652,10 +845,6 @@ def txt(
     """
 
 
-# ============================================================
-# Start SVG
-# ============================================================
-
 svg = f"""
 <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -677,7 +866,7 @@ svg = f"""
 {txt(
     24,
     35,
-    "Languages across source files",
+    "Languages across my contributed files",
     20,
     600,
     "#0969da",
@@ -688,8 +877,8 @@ svg = f"""
     60,
     (
         f"{total_files} source files "
-        f"across {repos_with_files} public repositories "
-        f"· {external_repos} owned by others"
+        f"across {repo_count} public repositories "
+        f"· {external_repo_count} owned by others"
     ),
     11,
 )}
@@ -709,14 +898,16 @@ if total_files > 0:
 
     position = BAR_X
 
-    for language, count in top_languages:
+    for language, count in ranked:
 
         fraction = (
-            count / total_files
+            count
+            / total_files
         )
 
         segment_width = (
-            fraction * BAR_WIDTH
+            fraction
+            * BAR_WIDTH
         )
 
         color = LANGUAGE_COLORS.get(
@@ -749,13 +940,13 @@ if total_files == 0:
     svg += txt(
         24,
         y,
-        "No recognized source files found.",
+        "No qualifying source files found.",
         13,
     )
 
 else:
 
-    for language, count in top_languages:
+    for language, count in ranked:
 
         color = LANGUAGE_COLORS.get(
             language,
@@ -823,25 +1014,70 @@ with open(
 
 
 # ============================================================
-# Console summary
+# Console output
 # ============================================================
 
 print()
-print("File-language summary")
-print("---------------------")
+print("=" * 60)
+print("MY CONTRIBUTED SOURCE FILES")
+print("=" * 60)
 
-for language, count in file_language_counts.most_common():
+for repo in result_repos_with_files:
 
-    percentage = (
-        100 * count / total_files
-        if total_files > 0
+    tag = (
+        "EXTERNAL"
+        if repo["external"]
+        else "OWN"
+    )
+
+    print()
+    print(
+        f"{tag}: "
+        f"{repo['repository']}"
+    )
+
+    print(
+        "  My commits: "
+        f"{repo['my_commits_on_default_branch']}"
+    )
+
+    print(
+        "  My source files: "
+        f"{repo['total_my_source_files']}"
+    )
+
+    for language, count in (
+        repo[
+            "my_source_files"
+        ].items()
+    ):
+
+        print(
+            f"    {language}: "
+            f"{count}"
+        )
+
+
+print()
+print("Overall:")
+
+for language, count in (
+    overall_file_counts
+    .most_common()
+):
+
+    percent = (
+        100
+        * count
+        / total_files
+        if total_files
         else 0
     )
 
     print(
-        f"{language:20s}"
-        f"{count:6d} files "
-        f"{percentage:6.2f}%"
+        f"  {language:20s} "
+        f"{count:4d} files "
+        f"{percent:6.2f}%"
     )
 
 
@@ -852,6 +1088,6 @@ print(
 )
 
 print(
-    "Audit file: "
+    "Audit: "
     "generated/contributed-file-repos.json"
 )
