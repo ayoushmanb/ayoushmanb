@@ -24,23 +24,40 @@ OUT.mkdir(exist_ok=True)
 
 
 # ============================================================
+# My Git identities
+#
+# GitHub username + historical Git author emails.
+#
+# This allows old commits to count even when they were not
+# associated with the GitHub account at the time.
+# ============================================================
+
+AUTHOR_IDENTITIES = [
+    USERNAME,
+
+    "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro-2.local",
+    "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro-1.local",
+    "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro.local",
+
+    "ayoushmanb@wustl.edu",
+]
+
+
+# ============================================================
 # Programming-language extensions
 # ============================================================
 
 LANGUAGE_EXTENSIONS = {
-    # Python
     ".py": "Python",
     ".pyx": "Python",
 
-    # R
     ".r": "R",
     ".rmd": "R",
 
-    # MATLAB
     ".m": "MATLAB",
 
-    # C / C++
     ".c": "C",
+
     ".cpp": "C++",
     ".cc": "C++",
     ".cxx": "C++",
@@ -48,52 +65,37 @@ LANGUAGE_EXTENSIONS = {
     ".hh": "C++",
     ".hxx": "C++",
 
-    # Java
     ".java": "Java",
 
-    # Julia
     ".jl": "Julia",
 
-    # JavaScript / TypeScript
     ".js": "JavaScript",
     ".jsx": "JavaScript",
+
     ".ts": "TypeScript",
     ".tsx": "TypeScript",
 
-    # Shell
     ".sh": "Shell",
     ".bash": "Shell",
     ".zsh": "Shell",
 
-    # SQL
     ".sql": "SQL",
 
-    # Rust
     ".rs": "Rust",
-
-    # Go
     ".go": "Go",
-
-    # C#
     ".cs": "C#",
 
-    # Scala
     ".scala": "Scala",
 
-    # Ruby
     ".rb": "Ruby",
 
-    # Swift
     ".swift": "Swift",
 
-    # Kotlin
     ".kt": "Kotlin",
     ".kts": "Kotlin",
 
-    # TeX
     ".tex": "TeX",
 
-    # Jupyter
     ".ipynb": "Jupyter Notebook",
 }
 
@@ -123,7 +125,7 @@ LANGUAGE_COLORS = {
 
 
 # ============================================================
-# Directories/files we do not want to count
+# Ignore generated/dependency directories
 # ============================================================
 
 EXCLUDED_DIRS = {
@@ -154,15 +156,17 @@ EXCLUDED_DIRS = {
 
 
 # ============================================================
-# GitHub GraphQL helper
+# GraphQL helper
 # ============================================================
 
 def graphql(query, variables):
 
-    payload = json.dumps({
-        "query": query,
-        "variables": variables,
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "query": query,
+            "variables": variables,
+        }
+    ).encode("utf-8")
 
     request = urllib.request.Request(
         GRAPHQL_API,
@@ -178,9 +182,11 @@ def graphql(query, variables):
         request,
         timeout=60,
     ) as response:
+
         result = json.load(response)
 
     if result.get("errors"):
+
         raise RuntimeError(
             json.dumps(
                 result["errors"],
@@ -192,7 +198,7 @@ def graphql(query, variables):
 
 
 # ============================================================
-# GitHub REST helper
+# REST helper
 # ============================================================
 
 def github_rest(path, params=None):
@@ -200,7 +206,11 @@ def github_rest(path, params=None):
     url = REST_API + path
 
     if params:
-        url += "?" + urllib.parse.urlencode(params)
+
+        url += (
+            "?"
+            + urllib.parse.urlencode(params)
+        )
 
     request = urllib.request.Request(
         url,
@@ -215,11 +225,12 @@ def github_rest(path, params=None):
         request,
         timeout=60,
     ) as response:
+
         return json.load(response)
 
 
 # ============================================================
-# Encode owner/repository safely for GitHub REST URLs
+# Encode owner/repository
 # ============================================================
 
 def encoded_repo_name(repo_name):
@@ -244,7 +255,6 @@ def excluded_file(path):
     if set(path_obj.parts) & EXCLUDED_DIRS:
         return True
 
-    # Ignore bundled/minified JavaScript-like files
     if ".min." in path_obj.name.lower():
         return True
 
@@ -258,20 +268,21 @@ def file_language(path):
 
     suffix = Path(path).suffix.lower()
 
-    return LANGUAGE_EXTENSIONS.get(suffix)
+    return LANGUAGE_EXTENSIONS.get(
+        suffix
+    )
 
 
 # ============================================================
 # Candidate repositories
 #
-# We discover repositories using several mechanisms:
+# We include:
 #
-# 1. ALL public repositories owned by the user
-# 2. Public repositoriesContributedTo repositories
-# 3. Historical commit-contribution repositories
-# 4. Historical pull-request contribution repositories
+# 1. all PUBLIC repos owned by me
+# 2. PUBLIC repos owned by others where GitHub records
+#    commit / PR contributions
 #
-# PRIVATE REPOSITORIES ARE ALWAYS EXCLUDED.
+# PRIVATE REPOSITORIES ARE EXCLUDED.
 # ============================================================
 
 repos = {}
@@ -301,23 +312,30 @@ def add_candidate_repo(
             "years": set(),
         }
 
-    repos[name]["discovery_sources"].add(source)
+    repos[name][
+        "discovery_sources"
+    ].add(source)
 
     if year is not None:
-        repos[name]["years"].add(year)
+
+        repos[name][
+            "years"
+        ].add(year)
 
 
 # ============================================================
-# 1. Discover ALL PUBLIC repositories owned by me
+# 1. All PUBLIC repositories owned by me
 #
-# IMPORTANT:
-# ayoushmanb/ayoushmanb IS INCLUDED.
+# ayoushmanb/ayoushmanb is intentionally included.
 # ============================================================
 
 def discover_owned_public_repositories():
 
     print()
-    print("Discovering public repositories owned by me...")
+    print(
+        "Discovering public repositories "
+        "owned by me..."
+    )
 
     page = 1
 
@@ -339,20 +357,22 @@ def discover_owned_public_repositories():
 
         for repo in data:
 
-            # ------------------------------------------------
-            # PRIVATE repositories remain excluded
-            # ------------------------------------------------
-
             if repo.get("private"):
                 continue
 
-            name = repo["full_name"]
-
             add_candidate_repo(
-                name=name,
-                owner=repo["owner"]["login"],
-                branch=repo.get("default_branch"),
-                source="owned_public_repo",
+                name=repo["full_name"],
+                owner=repo[
+                    "owner"
+                ][
+                    "login"
+                ],
+                branch=repo.get(
+                    "default_branch"
+                ),
+                source=(
+                    "owned_public_repo"
+                ),
             )
 
         if len(data) < 100:
@@ -362,14 +382,16 @@ def discover_owned_public_repositories():
 
 
 # ============================================================
-# 2. Discover PUBLIC external repositories through
-#    repositoriesContributedTo
+# 2. PUBLIC repositories contributed to
 # ============================================================
 
 def discover_repositories_contributed_to():
 
     print()
-    print("Discovering repositoriesContributedTo...")
+    print(
+        "Discovering "
+        "repositoriesContributedTo..."
+    )
 
     query = """
     query(
@@ -434,12 +456,11 @@ def discover_repositories_contributed_to():
             "repositoriesContributedTo"
         ]
 
-        for repo in connection["nodes"]:
+        for repo in connection[
+            "nodes"
+        ]:
 
-            # ------------------------------------------------
-            # PRIVATE third-party repositories remain excluded
-            # ------------------------------------------------
-
+            # Private repos stay excluded
             if repo["isPrivate"]:
                 continue
 
@@ -451,18 +472,34 @@ def discover_repositories_contributed_to():
                 continue
 
             add_candidate_repo(
-                name=repo["nameWithOwner"],
-                owner=repo["owner"]["login"],
-                branch=branch_ref["name"],
-                source="repositoriesContributedTo",
+                name=repo[
+                    "nameWithOwner"
+                ],
+                owner=repo[
+                    "owner"
+                ][
+                    "login"
+                ],
+                branch=branch_ref[
+                    "name"
+                ],
+                source=(
+                    "repositoriesContributedTo"
+                ),
             )
 
-        page_info = connection["pageInfo"]
+        page_info = connection[
+            "pageInfo"
+        ]
 
-        if not page_info["hasNextPage"]:
+        if not page_info[
+            "hasNextPage"
+        ]:
             break
 
-        cursor = page_info["endCursor"]
+        cursor = page_info[
+            "endCursor"
+        ]
 
 
 # ============================================================
@@ -502,7 +539,7 @@ def get_contribution_years():
 
 
 # ============================================================
-# 3/4. Historical commit + PR contribution repositories
+# 3. Historical contribution discovery
 # ============================================================
 
 def discover_historical_contributions():
@@ -581,8 +618,8 @@ def discover_historical_contributions():
     for year in years:
 
         print(
-            f"Checking historical contributions "
-            f"for {year}..."
+            "Checking historical "
+            f"contributions for {year}..."
         )
 
         data = graphql(
@@ -590,10 +627,12 @@ def discover_historical_contributions():
             {
                 "login": USERNAME,
                 "from": (
-                    f"{year}-01-01T00:00:00Z"
+                    f"{year}-01-01"
+                    "T00:00:00Z"
                 ),
                 "to": (
-                    f"{year}-12-31T23:59:59Z"
+                    f"{year}-12-31"
+                    "T23:59:59Z"
                 ),
             },
         )
@@ -604,17 +643,17 @@ def discover_historical_contributions():
             "contributionsCollection"
         ]
 
-        # ----------------------------------------------------
-        # Commit contribution repositories
-        # ----------------------------------------------------
-
         for item in collection[
             "commitContributionsByRepository"
         ]:
 
-            repo = item["repository"]
+            repo = item[
+                "repository"
+            ]
 
-            if repo["isPrivate"]:
+            if repo[
+                "isPrivate"
+            ]:
                 continue
 
             branch = repo.get(
@@ -625,24 +664,35 @@ def discover_historical_contributions():
                 continue
 
             add_candidate_repo(
-                name=repo["nameWithOwner"],
-                owner=repo["owner"]["login"],
-                branch=branch["name"],
-                source="historical_commit_contribution",
+                name=repo[
+                    "nameWithOwner"
+                ],
+                owner=repo[
+                    "owner"
+                ][
+                    "login"
+                ],
+                branch=branch[
+                    "name"
+                ],
+                source=(
+                    "historical_"
+                    "commit_contribution"
+                ),
                 year=year,
             )
-
-        # ----------------------------------------------------
-        # Pull-request contribution repositories
-        # ----------------------------------------------------
 
         for item in collection[
             "pullRequestContributionsByRepository"
         ]:
 
-            repo = item["repository"]
+            repo = item[
+                "repository"
+            ]
 
-            if repo["isPrivate"]:
+            if repo[
+                "isPrivate"
+            ]:
                 continue
 
             branch = repo.get(
@@ -653,16 +703,27 @@ def discover_historical_contributions():
                 continue
 
             add_candidate_repo(
-                name=repo["nameWithOwner"],
-                owner=repo["owner"]["login"],
-                branch=branch["name"],
-                source="historical_pr_contribution",
+                name=repo[
+                    "nameWithOwner"
+                ],
+                owner=repo[
+                    "owner"
+                ][
+                    "login"
+                ],
+                branch=branch[
+                    "name"
+                ],
+                source=(
+                    "historical_"
+                    "pr_contribution"
+                ),
                 year=year,
             )
 
 
 # ============================================================
-# Run repository discovery
+# Discover repositories
 # ============================================================
 
 discover_owned_public_repositories()
@@ -675,23 +736,20 @@ discover_historical_contributions()
 print()
 print(
     f"Found {len(repos)} candidate "
-    f"public repositories."
+    "public repositories."
 )
 
 
 # ============================================================
-# Get ALL current branches in a repository
-#
-# We search more than just "main".
-#
-# This allows us to find authored commits on feature branches,
-# gh-pages, or other current branches.
+# Get all current branches
 # ============================================================
 
 def get_branches(repo_name):
 
-    encoded_repo = encoded_repo_name(
-        repo_name
+    encoded_repo = (
+        encoded_repo_name(
+            repo_name
+        )
     )
 
     branches = []
@@ -712,7 +770,9 @@ def get_branches(repo_name):
             break
 
         branches.extend(
-            branch["name"]
+            branch[
+                "name"
+            ]
             for branch in data
         )
 
@@ -725,7 +785,17 @@ def get_branches(repo_name):
 
 
 # ============================================================
-# Get MY commits on one branch
+# Find my commits on ONE branch
+#
+# IMPORTANT:
+#
+# We query using:
+#
+# - GitHub username
+# - historical .local addresses
+# - WUSTL address
+#
+# and deduplicate everything by commit SHA.
 # ============================================================
 
 def get_my_commits_on_branch(
@@ -733,44 +803,74 @@ def get_my_commits_on_branch(
     branch,
 ):
 
-    encoded_repo = encoded_repo_name(
-        repo_name
+    encoded_repo = (
+        encoded_repo_name(
+            repo_name
+        )
     )
 
-    commits = []
+    commit_map = {}
 
-    page = 1
+    for identity in AUTHOR_IDENTITIES:
 
-    while True:
+        page = 1
 
-        data = github_rest(
-            f"/repos/{encoded_repo}/commits",
-            {
-                "author": USERNAME,
-                "sha": branch,
-                "per_page": 100,
-                "page": page,
-            },
-        )
+        while True:
 
-        if not data:
-            break
+            try:
 
-        commits.extend(data)
+                data = github_rest(
+                    f"/repos/"
+                    f"{encoded_repo}/commits",
+                    {
+                        "author":
+                            identity,
 
-        if len(data) < 100:
-            break
+                        "sha":
+                            branch,
 
-        page += 1
+                        "per_page":
+                            100,
 
-    return commits
+                        "page":
+                            page,
+                    },
+                )
+
+            except urllib.error.HTTPError as exc:
+
+                print(
+                    "      WARNING: "
+                    f"identity {identity} "
+                    f"returned HTTP "
+                    f"{exc.code}"
+                )
+
+                break
+
+            if not data:
+                break
+
+            for commit in data:
+
+                commit_map[
+                    commit[
+                        "sha"
+                    ]
+                ] = commit
+
+            if len(data) < 100:
+                break
+
+            page += 1
+
+    return list(
+        commit_map.values()
+    )
 
 
 # ============================================================
-# Get ALL unique commits authored by me
-#
-# Same commit may exist on several branches.
-# Deduplicate using commit SHA.
+# Find all unique commits across all current branches
 # ============================================================
 
 def get_all_my_commits(
@@ -786,6 +886,7 @@ def get_all_my_commits(
         default_branch
         and default_branch not in branches
     ):
+
         branches.append(
             default_branch
         )
@@ -793,8 +894,8 @@ def get_all_my_commits(
     commit_map = {}
 
     print(
-        f"  scanning {len(branches)} "
-        f"branch(es)"
+        f"  scanning "
+        f"{len(branches)} branch(es)"
     )
 
     for branch in branches:
@@ -811,8 +912,10 @@ def get_all_my_commits(
         except urllib.error.HTTPError as exc:
 
             print(
-                f"    WARNING: could not read "
-                f"branch {branch}: HTTP {exc.code}"
+                "    WARNING: "
+                f"could not read "
+                f"{branch}: "
+                f"HTTP {exc.code}"
             )
 
             continue
@@ -821,23 +924,28 @@ def get_all_my_commits(
 
             print(
                 f"    {branch}: "
-                f"{len(commits)} matching commit(s)"
+                f"{len(commits)} "
+                "matching commit(s)"
             )
 
         for commit in commits:
 
             commit_map[
-                commit["sha"]
+                commit[
+                    "sha"
+                ]
             ] = commit
 
     return (
-        list(commit_map.values()),
+        list(
+            commit_map.values()
+        ),
         branches,
     )
 
 
 # ============================================================
-# Get files changed by one commit
+# Files changed by one commit
 # ============================================================
 
 def get_commit_files(
@@ -845,8 +953,10 @@ def get_commit_files(
     sha,
 ):
 
-    encoded_repo = encoded_repo_name(
-        repo_name
+    encoded_repo = (
+        encoded_repo_name(
+            repo_name
+        )
     )
 
     files = []
@@ -856,7 +966,9 @@ def get_commit_files(
     while True:
 
         data = github_rest(
-            f"/repos/{encoded_repo}/commits/{sha}",
+            f"/repos/"
+            f"{encoded_repo}/"
+            f"commits/{sha}",
             {
                 "per_page": 100,
                 "page": page,
@@ -872,7 +984,10 @@ def get_commit_files(
             page_files
         )
 
-        if len(page_files) < 100:
+        if len(
+            page_files
+        ) < 100:
+
             break
 
         page += 1
@@ -881,15 +996,16 @@ def get_commit_files(
 
 
 # ============================================================
-# Find UNIQUE source-file paths personally touched by me
+# Unique source files touched by my commits
 #
-# Examples:
+# Same file edited 20 times:
+#     counted once
 #
-# model.R changed in 20 commits -> 1 file
+# Same commit present on multiple branches:
+#     counted once
 #
-# same commit visible on main + feature branch -> 1 commit
-#
-# same filename in different repositories -> counted separately
+# Same path in two repos:
+#     counted once per repo
 # ============================================================
 
 def get_my_source_files(
@@ -905,8 +1021,8 @@ def get_my_source_files(
     )
 
     print(
-        f"  unique authored commits: "
-        f"{len(commits)}"
+        "  unique authored "
+        f"commits: {len(commits)}"
     )
 
     touched_files = set()
@@ -916,11 +1032,14 @@ def get_my_source_files(
         start=1,
     ):
 
-        sha = commit["sha"]
+        sha = commit[
+            "sha"
+        ]
 
         print(
-            f"    commit "
-            f"{i}/{len(commits)} "
+            "    commit "
+            f"{i}/"
+            f"{len(commits)} "
             f"{sha[:8]}"
         )
 
@@ -934,27 +1053,30 @@ def get_my_source_files(
         except urllib.error.HTTPError as exc:
 
             print(
-                f"      WARNING: commit "
-                f"could not be read: "
-                f"HTTP {exc.code}"
+                "      WARNING: "
+                f"commit HTTP "
+                f"{exc.code}"
             )
 
             continue
 
         for file_info in files:
 
-            filename = file_info.get(
-                "filename"
+            filename = (
+                file_info.get(
+                    "filename"
+                )
             )
 
             if not filename:
                 continue
 
-            language = file_language(
-                filename
-            )
-
-            if language is None:
+            if (
+                file_language(
+                    filename
+                )
+                is None
+            ):
                 continue
 
             touched_files.add(
@@ -969,10 +1091,12 @@ def get_my_source_files(
 
 
 # ============================================================
-# Process candidate repositories
+# Process repositories
 # ============================================================
 
-overall_file_counts = Counter()
+overall_file_counts = (
+    Counter()
+)
 
 all_repo_results = []
 
@@ -989,12 +1113,15 @@ for repo_name in sorted(
     print()
     print("=" * 70)
     print(
-        f"Processing {repo_name}"
+        f"Processing "
+        f"{repo_name}"
     )
     print("=" * 70)
 
     external = (
-        repo["owner"].lower()
+        repo[
+            "owner"
+        ].lower()
         != USERNAME.lower()
     )
 
@@ -1020,7 +1147,9 @@ for repo_name in sorted(
 
         "contribution_years":
             sorted(
-                repo["years"]
+                repo[
+                    "years"
+                ]
             ),
 
         "branches_scanned":
@@ -1044,19 +1173,23 @@ for repo_name in sorted(
 
     try:
 
-        my_files, my_commits, branches = (
-            get_my_source_files(
-                repo_name,
-                repo["branch"],
-            )
+        (
+            my_files,
+            my_commits,
+            branches,
+        ) = get_my_source_files(
+            repo_name,
+            repo["branch"],
         )
 
         repo_counts = Counter()
 
         for path in my_files:
 
-            language = file_language(
-                path
+            language = (
+                file_language(
+                    path
+                )
             )
 
             if language is None:
@@ -1081,7 +1214,8 @@ for repo_name in sorted(
         result[
             "my_source_files"
         ] = dict(
-            repo_counts.most_common()
+            repo_counts
+            .most_common()
         )
 
         result[
@@ -1090,7 +1224,9 @@ for repo_name in sorted(
 
         result[
             "my_source_file_paths"
-        ] = sorted(my_files)
+        ] = sorted(
+            my_files
+        )
 
         if my_files:
 
@@ -1103,8 +1239,9 @@ for repo_name in sorted(
             result[
                 "status"
             ] = (
-                "commits_found_but_no_"
-                "recognized_source_files"
+                "commits_found_but_"
+                "no_recognized_"
+                "source_files"
             )
 
         else:
@@ -1113,7 +1250,8 @@ for repo_name in sorted(
                 "status"
             ] = (
                 "no_authored_commits_"
-                "found_on_current_branches"
+                "found_on_current_"
+                "branches"
             )
 
     except urllib.error.HTTPError as exc:
@@ -1121,12 +1259,15 @@ for repo_name in sorted(
         result[
             "status"
         ] = (
-            f"http_error_{exc.code}"
+            f"http_error_"
+            f"{exc.code}"
         )
 
         print(
-            f"WARNING: HTTP {exc.code} "
-            f"while processing {repo_name}"
+            "WARNING: "
+            f"HTTP {exc.code} "
+            f"while processing "
+            f"{repo_name}"
         )
 
     except Exception as exc:
@@ -1147,12 +1288,14 @@ for repo_name in sorted(
 
 
 # ============================================================
-# Repositories represented in the card
+# Repositories actually represented in card
 # ============================================================
 
 counted_repos = [
     repo
-    for repo in all_repo_results
+    for repo
+    in all_repo_results
+
     if repo[
         "total_my_source_files"
     ] > 0
@@ -1160,36 +1303,41 @@ counted_repos = [
 
 
 # ============================================================
-# Save detailed JSON audit
-#
-# ALL candidate public repositories remain in this file,
-# even if no files were ultimately counted.
-#
-# Private repos never enter this structure.
+# Save detailed audit JSON
 # ============================================================
 
 audit = {
     "username":
         USERNAME,
 
+    "author_identities":
+        AUTHOR_IDENTITIES,
+
     "definition":
         (
-            "Unique recognized source-file paths touched "
-            "by commits authored by the user in public "
-            "repositories. Includes public repositories "
-            "owned by the user and public repositories "
-            "owned by others. Private repositories are "
-            "excluded. Commits are searched across all "
-            "current repository branches and deduplicated "
-            "by commit SHA. File paths are deduplicated "
+            "Unique recognized source-file paths "
+            "touched by commits authored by the "
+            "user in public repositories. "
+            "Historical Git author identities are "
+            "included. Public repositories owned "
+            "by the user and public repositories "
+            "owned by others are included. "
+            "Private repositories are excluded. "
+            "Commits are searched across all "
+            "current branches and deduplicated "
+            "by SHA. File paths are deduplicated "
             "within each repository."
         ),
 
     "candidate_repository_count":
-        len(all_repo_results),
+        len(
+            all_repo_results
+        ),
 
     "counted_repository_count":
-        len(counted_repos),
+        len(
+            counted_repos
+        ),
 
     "repositories":
         all_repo_results,
@@ -1203,7 +1351,8 @@ audit = {
 
 
 with open(
-    OUT / "contributed-file-repos.json",
+    OUT
+    / "contributed-file-repos.json",
     "w",
     encoding="utf-8",
 ) as f:
@@ -1216,7 +1365,7 @@ with open(
 
 
 # ============================================================
-# Prepare SVG data
+# SVG data
 # ============================================================
 
 total_files = sum(
@@ -1229,8 +1378,11 @@ repo_count = len(
 
 external_repo_count = sum(
     1
-    for repo in counted_repos
-    if repo["external"]
+    for repo
+    in counted_repos
+    if repo[
+        "external"
+    ]
 )
 
 
@@ -1256,7 +1408,7 @@ HEIGHT = max(
 
 
 # ============================================================
-# SVG text helper
+# SVG helper
 # ============================================================
 
 def txt(
@@ -1329,7 +1481,7 @@ svg = f"""
 
 
 # ============================================================
-# Stacked language bar
+# Stacked bar
 # ============================================================
 
 if total_files > 0:
@@ -1455,7 +1607,8 @@ svg += "</svg>"
 # ============================================================
 
 with open(
-    OUT / "contributed-file-languages.svg",
+    OUT
+    / "contributed-file-languages.svg",
     "w",
     encoding="utf-8",
 ) as f:
@@ -1470,7 +1623,10 @@ with open(
 print()
 print()
 print("=" * 70)
-print("PERSONAL SOURCE-FILE CONTRIBUTION SUMMARY")
+print(
+    "PERSONAL SOURCE-FILE "
+    "CONTRIBUTION SUMMARY"
+)
 print("=" * 70)
 
 
@@ -1548,33 +1704,52 @@ for language, count in (
 
 
 print()
+
 print(
-    f"Candidate public repositories: "
+    "Author identities searched:"
+)
+
+for identity in (
+    AUTHOR_IDENTITIES
+):
+
+    print(
+        f"  - {identity}"
+    )
+
+
+print()
+
+print(
+    "Candidate public repositories: "
     f"{len(all_repo_results)}"
 )
 
 print(
-    f"Public repositories counted: "
+    "Public repositories counted: "
     f"{repo_count}"
 )
 
 print(
-    f"External public repositories counted: "
+    "External public repositories counted: "
     f"{external_repo_count}"
 )
 
 print(
-    f"Total unique source files: "
+    "Total unique source files: "
     f"{total_files}"
 )
 
 print()
+
 print(
     "Generated: "
-    "generated/contributed-file-languages.svg"
+    "generated/"
+    "contributed-file-languages.svg"
 )
 
 print(
     "Audit: "
-    "generated/contributed-file-repos.json"
+    "generated/"
+    "contributed-file-repos.json"
 )
