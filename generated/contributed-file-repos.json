@@ -1,6 +1,13 @@
 {
   "username": "ayoushmanb",
-  "definition": "Unique recognized source-file paths touched by commits authored by the user in public repositories. Includes public repositories owned by the user and public repositories owned by others. Private repositories are excluded. Commits are searched across all current repository branches and deduplicated by commit SHA. File paths are deduplicated within each repository.",
+  "author_identities": [
+    "ayoushmanb",
+    "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro-2.local",
+    "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro-1.local",
+    "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro.local",
+    "ayoushmanb@wustl.edu"
+  ],
+  "definition": "Unique recognized source-file paths touched by commits authored by the user in public repositories. Historical Git author identities are included. Public repositories owned by the user and public repositories owned by others are included. Private repositories are excluded. Commits are searched across all current branches and deduplicated by SHA. File paths are deduplicated within each repository.",
   "candidate_repository_count": 5,
   "counted_repository_count": 5,
   "repositories": [
@@ -19,7 +26,7 @@
       "branches_scanned": [
         "main"
       ],
-      "my_commits_found": 15,
+      "my_commits_found": 16,
       "my_source_files": {
         "Python": 2
       },
@@ -46,11 +53,11 @@
       "branches_scanned": [
         "main"
       ],
-      "my_commits_found": 19,
+      "my_commits_found": 24,
       "my_source_files": {
-        "MATLAB": 11
+        "MATLAB": 65
       },
-      "total_my_source_files": 11,
+      "total_my_source_files": 65,
       "my_source_file_paths": [
         "main_functions/atlas_comparison.m",
         "main_functions/consensus.m",
@@ -59,6 +66,60 @@
         "main_functions/inter_comparison.m",
         "main_functions/intra_comparison.m",
         "simulation/simulation_fc_matrix.m",
+        "support_functions/CBIG_HungarianClusterMatch.m",
+        "support_functions/CH.m",
+        "support_functions/CH_intra.m",
+        "support_functions/Cindex.m",
+        "support_functions/Cindex_intra.m",
+        "support_functions/Dunn_intra.m",
+        "support_functions/Edit_NetworkColors.m",
+        "support_functions/Explore_parcel_levels_HSB.m",
+        "support_functions/HD_inter.m",
+        "support_functions/HD_intra.m",
+        "support_functions/Matrix_Org3.m",
+        "support_functions/Matrix_metrics_HSB.m",
+        "support_functions/Mod_intra.m",
+        "support_functions/NMI_inter.m",
+        "support_functions/NMI_intra.m",
+        "support_functions/OrgClustMat_HSB.m",
+        "support_functions/PlotLRMeshes_mod.m",
+        "support_functions/SIL_intra.m",
+        "support_functions/VI_intra.m",
+        "support_functions/WSBM_consensus_HD.m",
+        "support_functions/adjust_brain_pos.m",
+        "support_functions/altas_comparison_NMI_plot.m",
+        "support_functions/apply_Kmeans.m",
+        "support_functions/apply_SC.m",
+        "support_functions/apply_WSBM.m",
+        "support_functions/apply_WSBM_boot.m",
+        "support_functions/applycmap.m",
+        "support_functions/assign_network_colors.m",
+        "support_functions/assign_networks_by_template.m",
+        "support_functions/assign_networks_by_template_cifti.m",
+        "support_functions/atlas_formation.m",
+        "support_functions/distinguishable_colors.m",
+        "support_functions/dunns.m",
+        "support_functions/freezeColors.m",
+        "support_functions/generate_fcmat.m",
+        "support_functions/hamming_distance.m",
+        "support_functions/identify_optimal_comm_Kmeans.m",
+        "support_functions/identify_optimal_comm_SC.m",
+        "support_functions/identify_optimal_comm_WSBM.m",
+        "support_functions/legend_generation.m",
+        "support_functions/mat_plot.m",
+        "support_functions/modularity.m",
+        "support_functions/munkres.m",
+        "support_functions/num_unique.m",
+        "support_functions/partition_distance.m",
+        "support_functions/plot_WSBM_boot_CI.m",
+        "support_functions/plot_inter_comparison.m",
+        "support_functions/plot_intra_comparison_v1.m",
+        "support_functions/plot_intra_comparison_v2.m",
+        "support_functions/rearrange_id.m",
+        "support_functions/regularize_HSB.m",
+        "support_functions/remove_singleton.m",
+        "support_functions/rotation_matrix.m",
+        "support_functions/silhouette_mod.m",
         "visualization/average_fcmatrix_plot.m",
         "visualization/consensus_surface_plot.m",
         "visualization/surface_plot.m",
@@ -82,25 +143,34 @@
       "branches_scanned": [
         "main"
       ],
-      "my_commits_found": 19,
+      "my_commits_found": 23,
       "my_source_files": {
-        "R": 24
+        "R": 33
       },
-      "total_my_source_files": 24,
+      "total_my_source_files": 33,
       "my_source_file_paths": [
+        "real_data/hypergraph_testing/real-data-twostar2-test-supp.R",
         "real_data/hypergraph_testing/real-data-twostar2-test.R",
+        "real_data/hypergraph_testing/real-data-type2-clustering-test-supp.R",
         "real_data/hypergraph_testing/real-data-type2-clustering-test.R",
         "real_data/real-data-summary-stat-comp.R",
+        "real_data/sparse_graphon_testing/real-data-sparse-graphon-clus-coeff-supp.R",
         "real_data/sparse_graphon_testing/real-data-sparse-graphon-clus-coeff.R",
+        "real_data/sparse_graphon_testing/real-data-sparse-graphon-two-stars-supp.R",
         "real_data/sparse_graphon_testing/real-data-sparse-graphon-two-stars.R",
+        "real_data/summary-stat-supp.R",
         "simulation/additional_simulation/type_3_tri_df.R",
         "simulation/additional_simulation/type_3_two_stars_df.R",
         "simulation/sim-colorless-triangles-run.R",
         "simulation/sim-type2-clustering-coeff-run.R",
+        "simulation/sim-type2-clustering-coeff-supp.R",
         "simulation/sim-type2-triangle-run.R",
+        "simulation/sim-type2-triangle-supp.R",
         "simulation/sim-type2-twostar-run.R",
         "simulation/sim-type3-clustering-coeff-run.R",
+        "simulation/sim-type3-clustering-coeff-supp.R",
         "simulation/sim-type3-triangle-run.R",
+        "simulation/sim-type3-triangle-supp.R",
         "support_functions/real-data-sparse-graphon-clus-coeff-supp.R",
         "support_functions/real-data-sparse-graphon-two-stars-supp.R",
         "support_functions/real-data-twostar2-test-supp.R",
@@ -130,11 +200,11 @@
       "branches_scanned": [
         "main"
       ],
-      "my_commits_found": 28,
+      "my_commits_found": 37,
       "my_source_files": {
-        "R": 50
+        "R": 52
       },
-      "total_my_source_files": 50,
+      "total_my_source_files": 52,
       "my_source_file_paths": [
         "archive/AB/01_data_prep.R",
         "archive/AB/02_.R",
@@ -157,6 +227,8 @@
         "archive/AB/race_ethnicity_plot.R",
         "archive/EDA_v1.R",
         "archive/code_v1.Rmd",
+        "codes/EDA_v1.R",
+        "codes/code_v1.Rmd",
         "eda/NAEP_plots.R",
         "eda/bipartite_row_col_type_v1.R",
         "eda/bipartite_v1.R",
@@ -206,21 +278,25 @@
         "main",
         "washu-datathon-2026"
       ],
-      "my_commits_found": 5,
+      "my_commits_found": 9,
       "my_source_files": {
-        "R": 2
+        "R": 6
       },
-      "total_my_source_files": 2,
+      "total_my_source_files": 6,
       "my_source_file_paths": [
         "ggkodom_image/kodom_image.R",
-        "scripts/eda_ab_pp.R"
+        "scripts/AB_age_NN.R",
+        "scripts/cleaning.R",
+        "scripts/eda_ab_final.R",
+        "scripts/eda_ab_pp.R",
+        "scripts/model_basic.R"
       ],
       "status": "counted"
     }
   ],
   "overall_file_counts": {
-    "R": 76,
-    "MATLAB": 11,
+    "R": 91,
+    "MATLAB": 65,
     "Python": 2
   }
 }
