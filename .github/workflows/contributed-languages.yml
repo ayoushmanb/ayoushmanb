@@ -4,11 +4,16 @@ on:
   workflow_dispatch:
 
   schedule:
-    - cron: "17 0-6 * * *"    
+    - cron: "17 0-6 * * *"
       timezone: "America/Chicago"
 
 permissions:
   contents: write
+
+# Same group as the other workflow, so they do not push simultaneously
+concurrency:
+  group: profile-language-cards
+  cancel-in-progress: false
 
 jobs:
   update:
@@ -30,12 +35,42 @@ jobs:
         run: |
           python scripts/contributed_languages.py
 
+      - name: Refresh README image cache
+        run: |
+          if ! git diff --quiet -- generated/contributed-languages.svg; then
+            python - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path("README.md")
+          text = path.read_text()
+
+          version = os.environ["GITHUB_RUN_ID"]
+
+          pattern = (
+              r'(\./generated/contributed-languages\.svg)'
+              r'(\?v=[^)"\s]*)?'
+          )
+
+          new_text = re.sub(
+              pattern,
+              lambda m: m.group(1) + f"?v={version}",
+              text
+          )
+
+          path.write_text(new_text)
+          PY
+          fi
+
       - name: Commit generated files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add generated/
+          git add generated/contributed-languages.svg
+          git add generated/contributed-repos.json
+          git add README.md
 
           if git diff --cached --quiet; then
             echo "Nothing changed."

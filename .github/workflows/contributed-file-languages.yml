@@ -10,6 +10,11 @@ on:
 permissions:
   contents: write
 
+# Prevent the two language workflows from trying to push at the same time
+concurrency:
+  group: profile-language-cards
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
@@ -30,6 +35,34 @@ jobs:
         run: |
           python scripts/contributed_file_languages.py
 
+      - name: Refresh README image cache
+        run: |
+          if ! git diff --quiet -- generated/contributed-file-languages.svg; then
+            python - <<'PY'
+          from pathlib import Path
+          import os
+          import re
+
+          path = Path("README.md")
+          text = path.read_text()
+
+          version = os.environ["GITHUB_RUN_ID"]
+
+          pattern = (
+              r'(\./generated/contributed-file-languages\.svg)'
+              r'(\?v=[^)"\s]*)?'
+          )
+
+          new_text = re.sub(
+              pattern,
+              lambda m: m.group(1) + f"?v={version}",
+              text
+          )
+
+          path.write_text(new_text)
+          PY
+          fi
+
       - name: Commit generated files
         run: |
           git config user.name "github-actions[bot]"
@@ -37,6 +70,7 @@ jobs:
 
           git add generated/contributed-file-languages.svg
           git add generated/contributed-file-repos.json
+          git add README.md
 
           if git diff --cached --quiet; then
             echo "Nothing changed."

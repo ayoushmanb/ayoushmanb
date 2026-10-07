@@ -34,11 +34,9 @@ OUT.mkdir(exist_ok=True)
 
 AUTHOR_IDENTITIES = [
     USERNAME,
-
     "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro-2.local",
     "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro-1.local",
     "ayoushmanbhattacharya@Ayoushmans-MacBook-Pro.local",
-
     "ayoushmanb@wustl.edu",
 ]
 
@@ -274,6 +272,21 @@ def file_language(path):
 
 
 # ============================================================
+# Deterministic language ranking
+# ============================================================
+
+def ranked_language_counts(counter):
+
+    return sorted(
+        counter.items(),
+        key=lambda item: (
+            -item[1],
+            item[0].lower(),
+        ),
+    )
+
+
+# ============================================================
 # Candidate repositories
 #
 # We include:
@@ -312,13 +325,17 @@ def add_candidate_repo(
             "years": set(),
         }
 
-    repos[name][
+    repos[
+        name
+    ][
         "discovery_sources"
     ].add(source)
 
     if year is not None:
 
-        repos[name][
+        repos[
+            name
+        ][
             "years"
         ].add(year)
 
@@ -529,13 +546,15 @@ def get_contribution_years():
         },
     )
 
-    return data[
-        "user"
-    ][
-        "contributionsCollection"
-    ][
-        "contributionYears"
-    ]
+    return sorted(
+        data[
+            "user"
+        ][
+            "contributionsCollection"
+        ][
+            "contributionYears"
+        ]
+    )
 
 
 # ============================================================
@@ -781,13 +800,15 @@ def get_branches(repo_name):
 
         page += 1
 
-    return branches
+    # Deterministic branch order
+    return sorted(
+        set(branches),
+        key=str.lower,
+    )
 
 
 # ============================================================
 # Find my commits on ONE branch
-#
-# IMPORTANT:
 #
 # We query using:
 #
@@ -864,9 +885,13 @@ def get_my_commits_on_branch(
 
             page += 1
 
-    return list(
-        commit_map.values()
-    )
+    # Deterministic ordering by SHA
+    return [
+        commit_map[sha]
+        for sha in sorted(
+            commit_map
+        )
+    ]
 
 
 # ============================================================
@@ -889,6 +914,11 @@ def get_all_my_commits(
 
         branches.append(
             default_branch
+        )
+
+        branches = sorted(
+            set(branches),
+            key=str.lower,
         )
 
     commit_map = {}
@@ -936,10 +966,15 @@ def get_all_my_commits(
                 ]
             ] = commit
 
+    commits = [
+        commit_map[sha]
+        for sha in sorted(
+            commit_map
+        )
+    ]
+
     return (
-        list(
-            commit_map.values()
-        ),
+        commits,
         branches,
     )
 
@@ -1094,9 +1129,7 @@ def get_my_source_files(
 # Process repositories
 # ============================================================
 
-overall_file_counts = (
-    Counter()
-)
+overall_file_counts = Counter()
 
 all_repo_results = []
 
@@ -1112,10 +1145,12 @@ for repo_name in sorted(
 
     print()
     print("=" * 70)
+
     print(
         f"Processing "
         f"{repo_name}"
     )
+
     print("=" * 70)
 
     external = (
@@ -1184,7 +1219,11 @@ for repo_name in sorted(
 
         repo_counts = Counter()
 
-        for path in my_files:
+        # Deterministic source-file ordering
+        for path in sorted(
+            my_files,
+            key=str.lower,
+        ):
 
             language = (
                 file_language(
@@ -1205,27 +1244,37 @@ for repo_name in sorted(
 
         result[
             "branches_scanned"
-        ] = sorted(branches)
+        ] = sorted(
+            branches,
+            key=str.lower,
+        )
 
         result[
             "my_commits_found"
-        ] = len(my_commits)
+        ] = len(
+            my_commits
+        )
 
+        # Deterministic language order
         result[
             "my_source_files"
         ] = dict(
-            repo_counts
-            .most_common()
+            ranked_language_counts(
+                repo_counts
+            )
         )
 
         result[
             "total_my_source_files"
-        ] = len(my_files)
+        ] = len(
+            my_files
+        )
 
         result[
             "my_source_file_paths"
         ] = sorted(
-            my_files
+            my_files,
+            key=str.lower,
         )
 
         if my_files:
@@ -1295,7 +1344,6 @@ counted_repos = [
     repo
     for repo
     in all_repo_results
-
     if repo[
         "total_my_source_files"
     ] > 0
@@ -1342,10 +1390,12 @@ audit = {
     "repositories":
         all_repo_results,
 
+    # Deterministic language order
     "overall_file_counts":
         dict(
-            overall_file_counts
-            .most_common()
+            ranked_language_counts(
+                overall_file_counts
+            )
         ),
 }
 
@@ -1388,11 +1438,16 @@ external_repo_count = sum(
 
 MAX_LANGUAGES = 8
 
+
+# Deterministic:
+# 1. largest count first
+# 2. alphabetically when counts tie
 ranked = (
-    overall_file_counts
-    .most_common(
-        MAX_LANGUAGES
-    )
+    ranked_language_counts(
+        overall_file_counts
+    )[
+        :MAX_LANGUAGES
+    ]
 )
 
 
@@ -1622,11 +1677,14 @@ with open(
 
 print()
 print()
+
 print("=" * 70)
+
 print(
     "PERSONAL SOURCE-FILE "
     "CONTRIBUTION SUMMARY"
 )
+
 print("=" * 70)
 
 
@@ -1636,7 +1694,9 @@ for repo in all_repo_results:
 
     tag = (
         "EXTERNAL"
-        if repo["external"]
+        if repo[
+            "external"
+        ]
         else "OWN"
     )
 
@@ -1684,8 +1744,9 @@ print("-" * 70)
 
 
 for language, count in (
-    overall_file_counts
-    .most_common()
+    ranked_language_counts(
+        overall_file_counts
+    )
 ):
 
     percentage = (
@@ -1709,9 +1770,8 @@ print(
     "Author identities searched:"
 )
 
-for identity in (
-    AUTHOR_IDENTITIES
-):
+
+for identity in AUTHOR_IDENTITIES:
 
     print(
         f"  - {identity}"

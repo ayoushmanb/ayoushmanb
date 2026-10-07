@@ -5,6 +5,11 @@ import urllib.request
 from collections import Counter
 from pathlib import Path
 
+
+# ============================================================
+# Configuration
+# ============================================================
+
 USERNAME = os.getenv("GITHUB_USERNAME", "ayoushmanb")
 TOKEN = os.environ["GITHUB_TOKEN"]
 API = "https://api.github.com/graphql"
@@ -13,7 +18,12 @@ OUT = Path("generated")
 OUT.mkdir(exist_ok=True)
 
 
+# ============================================================
+# GraphQL helper
+# ============================================================
+
 def graphql(query, variables):
+
     payload = json.dumps({
         "query": query,
         "variables": variables
@@ -33,14 +43,19 @@ def graphql(query, variables):
         result = json.load(response)
 
     if "errors" in result:
-        raise RuntimeError(json.dumps(result["errors"], indent=2))
+        raise RuntimeError(
+            json.dumps(
+                result["errors"],
+                indent=2
+            )
+        )
 
     return result["data"]
 
 
-# ---------------------------------------------------------
+# ============================================================
 # 1. Find every year in which this user contributed
-# ---------------------------------------------------------
+# ============================================================
 
 year_query = """
 query($login: String!) {
@@ -52,16 +67,32 @@ query($login: String!) {
 }
 """
 
-data = graphql(year_query, {"login": USERNAME})
+data = graphql(
+    year_query,
+    {
+        "login": USERNAME
+    }
+)
 
-years = data["user"]["contributionsCollection"]["contributionYears"]
+years = sorted(
+    data[
+        "user"
+    ][
+        "contributionsCollection"
+    ][
+        "contributionYears"
+    ]
+)
 
-print("Contribution years:", years)
+print(
+    "Contribution years:",
+    years
+)
 
 
-# ---------------------------------------------------------
+# ============================================================
 # 2. Get repositories for commit + PR contributions
-# ---------------------------------------------------------
+# ============================================================
 
 repo_fragment = """
 repository {
@@ -73,7 +104,13 @@ repository {
     login
   }
 
-  languages(first: 20, orderBy: {field: SIZE, direction: DESC}) {
+  languages(
+    first: 20,
+    orderBy: {
+      field: SIZE,
+      direction: DESC
+    }
+  ) {
     totalSize
 
     edges {
@@ -87,6 +124,7 @@ repository {
   }
 }
 """
+
 
 contribution_query = f"""
 query(
@@ -130,143 +168,355 @@ query(
 repos = {}
 
 
-def add_repo(item, contribution_type, year):
+def add_repo(
+    item,
+    contribution_type,
+    year,
+):
 
     repo = item["repository"]
 
+    # Exclude private repositories
     if repo["isPrivate"]:
         return
 
-    language_edges = repo["languages"]["edges"]
+    language_edges = (
+        repo[
+            "languages"
+        ][
+            "edges"
+        ]
+    )
 
     # No recognized programming language
     if not language_edges:
         return
 
-    name = repo["nameWithOwner"]
+    name = repo[
+        "nameWithOwner"
+    ]
 
     if name not in repos:
+
         repos[name] = {
-            "name": name,
-            "url": repo["url"],
-            "owner": repo["owner"]["login"],
-            "commit_count": 0,
-            "pr_count": 0,
-            "years": set(),
-            "languages": language_edges,
+            "name":
+                name,
+
+            "url":
+                repo["url"],
+
+            "owner":
+                repo[
+                    "owner"
+                ][
+                    "login"
+                ],
+
+            "commit_count":
+                0,
+
+            "pr_count":
+                0,
+
+            "years":
+                set(),
+
+            "languages":
+                language_edges,
         }
 
-    count = item["contributions"]["totalCount"]
+    count = (
+        item[
+            "contributions"
+        ][
+            "totalCount"
+        ]
+    )
 
     if contribution_type == "commit":
-        repos[name]["commit_count"] += count
+
+        repos[
+            name
+        ][
+            "commit_count"
+        ] += count
 
     if contribution_type == "pr":
-        repos[name]["pr_count"] += count
 
-    repos[name]["years"].add(year)
+        repos[
+            name
+        ][
+            "pr_count"
+        ] += count
 
+    repos[
+        name
+    ][
+        "years"
+    ].add(year)
+
+
+# ============================================================
+# Read contributions year by year
+# ============================================================
 
 for year in years:
 
-    print(f"Reading {year}...")
+    print(
+        f"Reading {year}..."
+    )
 
     data = graphql(
         contribution_query,
         {
-            "login": USERNAME,
-            "from": f"{year}-01-01T00:00:00Z",
-            "to": f"{year}-12-31T23:59:59Z",
+            "login":
+                USERNAME,
+
+            "from":
+                f"{year}-01-01T00:00:00Z",
+
+            "to":
+                f"{year}-12-31T23:59:59Z",
         },
     )
 
-    collection = data["user"]["contributionsCollection"]
+    collection = (
+        data[
+            "user"
+        ][
+            "contributionsCollection"
+        ]
+    )
 
-    for item in collection["commitContributionsByRepository"]:
-        add_repo(item, "commit", year)
+    for item in collection[
+        "commitContributionsByRepository"
+    ]:
 
-    for item in collection["pullRequestContributionsByRepository"]:
-        add_repo(item, "pr", year)
+        add_repo(
+            item,
+            "commit",
+            year,
+        )
+
+    for item in collection[
+        "pullRequestContributionsByRepository"
+    ]:
+
+        add_repo(
+            item,
+            "pr",
+            year,
+        )
 
 
-# ---------------------------------------------------------
+# ============================================================
 # 3. Determine primary language for each contributed repo
 #
 # ONE REPOSITORY = ONE VOTE
 #
 # Example:
+#
 # repo 1 -> Python
 # repo 2 -> Python
 # repo 3 -> R
 #
 # result:
+#
 # Python = 2
 # R      = 1
-# ---------------------------------------------------------
+# ============================================================
 
 language_counts = Counter()
 language_colors = {}
 
 result_repos = []
 
-for repo in repos.values():
 
+# Sort repository names so output is deterministic
+for repo_name in sorted(
+    repos,
+    key=str.lower,
+):
+
+    repo = repos[
+        repo_name
+    ]
+
+    # Sort primarily by language size.
+    #
+    # If two languages have exactly the same size,
+    # use language name as a deterministic tie-breaker.
     languages = sorted(
-        repo["languages"],
-        key=lambda x: x["size"],
-        reverse=True,
+        repo[
+            "languages"
+        ],
+        key=lambda x: (
+            -x["size"],
+            x[
+                "node"
+            ][
+                "name"
+            ].lower(),
+        ),
     )
 
-    primary = languages[0]["node"]["name"]
-    color = languages[0]["node"]["color"] or "#8c959f"
+    primary = (
+        languages[
+            0
+        ][
+            "node"
+        ][
+            "name"
+        ]
+    )
 
-    language_counts[primary] += 1
-    language_colors[primary] = color
+    color = (
+        languages[
+            0
+        ][
+            "node"
+        ][
+            "color"
+        ]
+        or "#8c959f"
+    )
 
-    external = repo["owner"].lower() != USERNAME.lower()
+    language_counts[
+        primary
+    ] += 1
+
+    language_colors[
+        primary
+    ] = color
+
+    external = (
+        repo[
+            "owner"
+        ].lower()
+        != USERNAME.lower()
+    )
 
     result_repos.append({
-        "repository": repo["name"],
-        "owner": repo["owner"],
-        "external": external,
-        "primary_language": primary,
-        "commits": repo["commit_count"],
-        "pull_requests": repo["pr_count"],
-        "years": sorted(repo["years"]),
+        "repository":
+            repo["name"],
+
+        "owner":
+            repo["owner"],
+
+        "external":
+            external,
+
+        "primary_language":
+            primary,
+
+        "commits":
+            repo[
+                "commit_count"
+            ],
+
+        "pull_requests":
+            repo[
+                "pr_count"
+            ],
+
+        "years":
+            sorted(
+                repo[
+                    "years"
+                ]
+            ),
     })
 
 
+# External repositories first,
+# then alphabetical repository name.
 result_repos.sort(
     key=lambda x: (
-        not x["external"],
-        x["repository"].lower()
+        not x[
+            "external"
+        ],
+        x[
+            "repository"
+        ].lower(),
     )
 )
 
 
-# Save this so that you can check which repos were found.
-with open(OUT / "contributed-repos.json", "w") as f:
-    json.dump(result_repos, f, indent=2)
+# ============================================================
+# Save audit JSON
+# ============================================================
+
+with open(
+    OUT / "contributed-repos.json",
+    "w",
+    encoding="utf-8",
+) as f:
+
+    json.dump(
+        result_repos,
+        f,
+        indent=2,
+    )
 
 
-# ---------------------------------------------------------
+# ============================================================
 # 4. Generate SVG
-# ---------------------------------------------------------
+# ============================================================
 
-top_languages = language_counts.most_common(8)
+# Deterministic ranking:
+#
+# 1. larger repository count first
+# 2. alphabetically if tied
+top_languages = sorted(
+    language_counts.items(),
+    key=lambda x: (
+        -x[1],
+        x[0].lower(),
+    ),
+)[:8]
 
-total_repos = sum(language_counts.values())
 
-external_repos = sum(
-    1 for x in result_repos if x["external"]
+total_repos = sum(
+    language_counts.values()
 )
 
+
+external_repos = sum(
+    1
+    for x in result_repos
+    if x[
+        "external"
+    ]
+)
+
+
 WIDTH = 495
-HEIGHT = 155 + 30 * len(top_languages)
+
+HEIGHT = (
+    155
+    + 30
+    * len(
+        top_languages
+    )
+)
 
 
-def txt(x, y, value, size=13, weight=400, color="#656d76"):
-    value = html.escape(str(value))
+# ============================================================
+# SVG helper
+# ============================================================
+
+def txt(
+    x,
+    y,
+    value,
+    size=13,
+    weight=400,
+    color="#656d76",
+):
+
+    value = html.escape(
+        str(value)
+    )
 
     return f"""
     <text
@@ -279,6 +529,10 @@ def txt(x, y, value, size=13, weight=400, color="#656d76"):
     >{value}</text>
     """
 
+
+# ============================================================
+# SVG header
+# ============================================================
 
 svg = f"""
 <svg
@@ -299,22 +553,29 @@ svg = f"""
 />
 
 {txt(
-    24, 35,
+    24,
+    35,
     "Languages across contributed repositories",
-    20, 600, "#0969da"
+    20,
+    600,
+    "#0969da",
 )}
 
 {txt(
-    24, 60,
-    f"{total_repos} public repositories · {external_repos} owned by others",
-    12
+    24,
+    60,
+    (
+        f"{total_repos} public repositories "
+        f"· {external_repos} owned by others"
+    ),
+    12,
 )}
 """
 
 
-# ---------------------------------------------------------
+# ============================================================
 # Stacked language bar
-# ---------------------------------------------------------
+# ============================================================
 
 BAR_X = 24
 BAR_Y = 80
@@ -323,91 +584,152 @@ BAR_HEIGHT = 10
 
 position = BAR_X
 
-for language, count in top_languages:
 
-    fraction = count / total_repos
-    segment_width = fraction * BAR_WIDTH
+if total_repos > 0:
 
-    color = language_colors.get(language, "#8c959f")
+    for language, count in top_languages:
 
-    svg += f"""
-    <rect
-        x="{position}"
-        y="{BAR_Y}"
-        width="{segment_width}"
-        height="{BAR_HEIGHT}"
-        fill="{color}"
-    />
-    """
+        fraction = (
+            count
+            / total_repos
+        )
 
-    position += segment_width
+        segment_width = (
+            fraction
+            * BAR_WIDTH
+        )
+
+        color = (
+            language_colors.get(
+                language,
+                "#8c959f",
+            )
+        )
+
+        svg += f"""
+        <rect
+            x="{position:.2f}"
+            y="{BAR_Y}"
+            width="{segment_width:.2f}"
+            height="{BAR_HEIGHT}"
+            fill="{color}"
+        />
+        """
+
+        position += (
+            segment_width
+        )
 
 
-# ---------------------------------------------------------
+# ============================================================
 # Language list
-# ---------------------------------------------------------
+# ============================================================
 
 y = 125
 
-for language, count in top_languages:
 
-    color = language_colors.get(language, "#8c959f")
-    percent = 100 * count / total_repos
-
-    svg += f"""
-    <circle
-        cx="29"
-        cy="{y - 4}"
-        r="5"
-        fill="{color}"
-    />
-    """
+if total_repos == 0:
 
     svg += txt(
-        44,
+        24,
         y,
-        language,
+        "No qualifying public repositories found.",
         13,
-        600,
-        "#24292f",
     )
 
-    svg += txt(
-        290,
-        y,
-        f"{count} repo{'s' if count != 1 else ''}",
-        12,
-    )
+else:
 
-    svg += txt(
-        390,
-        y,
-        f"{percent:.1f}%",
-        12,
-    )
+    for language, count in top_languages:
 
-    y += 30
+        color = (
+            language_colors.get(
+                language,
+                "#8c959f",
+            )
+        )
+
+        percent = (
+            100
+            * count
+            / total_repos
+        )
+
+        svg += f"""
+        <circle
+            cx="29"
+            cy="{y - 4}"
+            r="5"
+            fill="{color}"
+        />
+        """
+
+        svg += txt(
+            44,
+            y,
+            language,
+            13,
+            600,
+            "#24292f",
+        )
+
+        svg += txt(
+            290,
+            y,
+            (
+                f"{count} "
+                f"repo"
+                f"{'' if count == 1 else 's'}"
+            ),
+            12,
+        )
+
+        svg += txt(
+            390,
+            y,
+            f"{percent:.1f}%",
+            12,
+        )
+
+        y += 30
 
 
 svg += "</svg>"
 
 
+# ============================================================
+# Save SVG
+# ============================================================
+
 with open(
-    OUT / "contributed-languages.svg",
-    "w"
+    OUT
+    / "contributed-languages.svg",
+    "w",
+    encoding="utf-8",
 ) as f:
+
     f.write(svg)
 
 
+# ============================================================
+# Console summary
+# ============================================================
+
 print()
-print("Repositories included:")
-print("----------------------")
+print(
+    "Repositories included:"
+)
+print(
+    "----------------------"
+)
+
 
 for repo in result_repos:
 
     owner_type = (
         "EXTERNAL"
-        if repo["external"]
+        if repo[
+            "external"
+        ]
         else "OWN"
     )
 
@@ -419,16 +741,50 @@ for repo in result_repos:
 
 
 print()
+
 print(
-    f"Total repositories: {total_repos}"
+    f"Total repositories: "
+    f"{total_repos}"
 )
 
 print(
-    f"External repositories: {external_repos}"
+    f"External repositories: "
+    f"{external_repos}"
 )
 
 print()
+
+print(
+    "Language summary:"
+)
+
+for language, count in top_languages:
+
+    percentage = (
+        100
+        * count
+        / total_repos
+        if total_repos
+        else 0
+    )
+
+    print(
+        f"  {language:20s} "
+        f"{count:3d} repos "
+        f"{percentage:6.2f}%"
+    )
+
+
+print()
+
 print(
     "Generated: "
-    "generated/contributed-languages.svg"
+    "generated/"
+    "contributed-languages.svg"
+)
+
+print(
+    "Audit: "
+    "generated/"
+    "contributed-repos.json"
 )
