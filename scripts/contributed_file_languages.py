@@ -3,6 +3,7 @@ import json
 import html
 import urllib.request
 import urllib.parse
+import urllib.error
 
 from collections import Counter
 from pathlib import Path
@@ -21,9 +22,11 @@ REST_API = "https://api.github.com"
 OUT = Path("generated")
 OUT.mkdir(exist_ok=True)
 
+PROFILE_REPO = f"{USERNAME}/{USERNAME}".lower()
+
 
 # ============================================================
-# Languages we want to count
+# Programming-language extensions
 # ============================================================
 
 LANGUAGE_EXTENSIONS = {
@@ -65,7 +68,6 @@ LANGUAGE_EXTENSIONS = {
     ".cs": "C#",
 
     ".scala": "Scala",
-
     ".rb": "Ruby",
 
     ".swift": "Swift",
@@ -104,7 +106,7 @@ LANGUAGE_COLORS = {
 
 
 # ============================================================
-# Ignore generated / dependency directories
+# Directories/files that should not count
 # ============================================================
 
 EXCLUDED_DIRS = {
@@ -135,7 +137,7 @@ EXCLUDED_DIRS = {
 
 
 # ============================================================
-# GitHub GraphQL helper
+# GitHub API helpers
 # ============================================================
 
 def graphql(query, variables):
@@ -143,7 +145,7 @@ def graphql(query, variables):
     payload = json.dumps({
         "query": query,
         "variables": variables,
-    }).encode()
+    }).encode("utf-8")
 
     request = urllib.request.Request(
         GRAPHQL_API,
@@ -151,24 +153,26 @@ def graphql(query, variables):
         headers={
             "Authorization": f"Bearer {TOKEN}",
             "Content-Type": "application/json",
-            "User-Agent": "github-my-file-language-card",
+            "User-Agent": "github-personal-language-card",
         },
     )
 
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(
+        request,
+        timeout=60,
+    ) as response:
         result = json.load(response)
 
-    if "errors" in result:
+    if result.get("errors"):
         raise RuntimeError(
-            json.dumps(result["errors"], indent=2)
+            json.dumps(
+                result["errors"],
+                indent=2,
+            )
         )
 
     return result["data"]
 
-
-# ============================================================
-# GitHub REST helper
-# ============================================================
 
 def github_rest(path, params=None):
 
@@ -182,207 +186,16 @@ def github_rest(path, params=None):
         headers={
             "Authorization": f"Bearer {TOKEN}",
             "Accept": "application/vnd.github+json",
-            "User-Agent": "github-my-file-language-card",
+            "User-Agent": "github-personal-language-card",
         },
     )
 
-    with urllib.request.urlopen(request) as response:
+    with urllib.request.urlopen(
+        request,
+        timeout=60,
+    ) as response:
         return json.load(response)
 
-
-# ============================================================
-# Find contribution years
-# ============================================================
-
-year_query = """
-query($login: String!) {
-  user(login: $login) {
-    contributionsCollection {
-      contributionYears
-    }
-  }
-}
-"""
-
-data = graphql(
-    year_query,
-    {"login": USERNAME},
-)
-
-years = data[
-    "user"
-][
-    "contributionsCollection"
-][
-    "contributionYears"
-]
-
-print("Contribution years:", years)
-
-
-# ============================================================
-# Discover public repositories where I have commit
-# contributions
-# ============================================================
-
-repo_fragment = """
-repository {
-
-  nameWithOwner
-  isPrivate
-
-  owner {
-    login
-  }
-
-  defaultBranchRef {
-
-    name
-
-    target {
-      ... on Commit {
-
-        tree {
-          oid
-        }
-
-      }
-    }
-
-  }
-
-}
-"""
-
-
-contribution_query = f"""
-query(
-    $login: String!,
-    $from: DateTime!,
-    $to: DateTime!
-) {{
-
-  user(login: $login) {{
-
-    contributionsCollection(
-        from: $from,
-        to: $to
-    ) {{
-
-      commitContributionsByRepository(
-          maxRepositories: 100
-      ) {{
-
-        {repo_fragment}
-
-        contributions(first: 1) {{
-          totalCount
-        }}
-
-      }}
-
-    }}
-
-  }}
-
-}}
-"""
-
-
-repos = {}
-
-
-def add_repo(item, year):
-
-    repo = item["repository"]
-
-    # --------------------------------------------------------
-    # Public repositories only
-    # --------------------------------------------------------
-
-    if repo["isPrivate"]:
-        return
-
-    # --------------------------------------------------------
-    # Do not count the GitHub profile repository itself.
-    #
-    # Otherwise scripts/contributed_*.py would artificially
-    # add Python to the card.
-    # --------------------------------------------------------
-
-    if (
-        repo["nameWithOwner"].lower()
-        == f"{USERNAME}/{USERNAME}".lower()
-    ):
-        return
-
-    default_branch = repo.get(
-        "defaultBranchRef"
-    )
-
-    if default_branch is None:
-        return
-
-    target = default_branch.get("target")
-
-    if target is None:
-        return
-
-    tree = target.get("tree")
-
-    if tree is None:
-        return
-
-    name = repo["nameWithOwner"]
-
-    if name not in repos:
-
-        repos[name] = {
-            "name": name,
-            "owner": repo["owner"]["login"],
-            "branch": default_branch["name"],
-            "tree_oid": tree["oid"],
-            "years": set(),
-        }
-
-    repos[name]["years"].add(year)
-
-
-for year in years:
-
-    print(
-        f"Finding contributed repositories "
-        f"for {year}..."
-    )
-
-    data = graphql(
-        contribution_query,
-        {
-            "login": USERNAME,
-            "from": f"{year}-01-01T00:00:00Z",
-            "to": f"{year}-12-31T23:59:59Z",
-        },
-    )
-
-    collection = data[
-        "user"
-    ][
-        "contributionsCollection"
-    ]
-
-    for item in collection[
-        "commitContributionsByRepository"
-    ]:
-
-        add_repo(
-            item,
-            year,
-        )
-
-
-# ============================================================
-# Helpers
-# ============================================================
 
 def encoded_repo_name(repo_name):
 
@@ -394,6 +207,10 @@ def encoded_repo_name(repo_name):
         for part in repo_name.split("/")
     )
 
+
+# ============================================================
+# Source-file helpers
+# ============================================================
 
 def excluded_file(path):
 
@@ -413,68 +230,461 @@ def file_language(path):
     if excluded_file(path):
         return None
 
-    extension = Path(
-        path
-    ).suffix.lower()
+    suffix = Path(path).suffix.lower()
 
-    return LANGUAGE_EXTENSIONS.get(
-        extension
+    return LANGUAGE_EXTENSIONS.get(suffix)
+
+
+# ============================================================
+# Candidate repositories
+#
+# We intentionally discover repositories in several ways:
+#
+# 1. All public repositories owned by the user
+# 2. repositoriesContributedTo
+# 3. Historical commit-contribution collections
+# 4. Historical PR-contribution collections
+#
+# This makes discovery substantially less restrictive.
+# ============================================================
+
+repos = {}
+
+
+def add_candidate_repo(
+    name,
+    owner,
+    branch,
+    source,
+    year=None,
+):
+
+    if not name:
+        return
+
+    if name.lower() == PROFILE_REPO:
+        return
+
+    if not branch:
+        return
+
+    if name not in repos:
+
+        repos[name] = {
+            "name": name,
+            "owner": owner,
+            "branch": branch,
+            "discovery_sources": set(),
+            "years": set(),
+        }
+
+    repos[name]["discovery_sources"].add(source)
+
+    if year is not None:
+        repos[name]["years"].add(year)
+
+
+# ============================================================
+# 1. ALL public repositories owned by me
+# ============================================================
+
+def discover_owned_public_repositories():
+
+    print()
+    print("Discovering public repositories owned by me...")
+
+    page = 1
+
+    while True:
+
+        data = github_rest(
+            f"/users/{USERNAME}/repos",
+            {
+                "type": "owner",
+                "sort": "updated",
+                "direction": "desc",
+                "per_page": 100,
+                "page": page,
+            },
+        )
+
+        if not data:
+            break
+
+        for repo in data:
+
+            if repo.get("private"):
+                continue
+
+            name = repo["full_name"]
+
+            if name.lower() == PROFILE_REPO:
+                continue
+
+            add_candidate_repo(
+                name=name,
+                owner=repo["owner"]["login"],
+                branch=repo.get("default_branch"),
+                source="owned_public_repo",
+            )
+
+        if len(data) < 100:
+            break
+
+        page += 1
+
+
+# ============================================================
+# 2. repositoriesContributedTo
+# ============================================================
+
+def discover_repositories_contributed_to():
+
+    print()
+    print("Discovering repositoriesContributedTo...")
+
+    query = """
+    query(
+        $login: String!,
+        $cursor: String
+    ) {
+
+      user(login: $login) {
+
+        repositoriesContributedTo(
+          first: 100,
+          after: $cursor,
+          includeUserRepositories: false,
+          contributionTypes: [
+            COMMIT,
+            PULL_REQUEST
+          ]
+        ) {
+
+          pageInfo {
+            hasNextPage
+            endCursor
+          }
+
+          nodes {
+
+            nameWithOwner
+            isPrivate
+
+            owner {
+              login
+            }
+
+            defaultBranchRef {
+              name
+            }
+
+          }
+
+        }
+
+      }
+
+    }
+    """
+
+    cursor = None
+
+    while True:
+
+        data = graphql(
+            query,
+            {
+                "login": USERNAME,
+                "cursor": cursor,
+            },
+        )
+
+        connection = data[
+            "user"
+        ][
+            "repositoriesContributedTo"
+        ]
+
+        for repo in connection["nodes"]:
+
+            if repo["isPrivate"]:
+                continue
+
+            branch_ref = repo.get(
+                "defaultBranchRef"
+            )
+
+            if not branch_ref:
+                continue
+
+            add_candidate_repo(
+                name=repo["nameWithOwner"],
+                owner=repo["owner"]["login"],
+                branch=branch_ref["name"],
+                source="repositoriesContributedTo",
+            )
+
+        page_info = connection["pageInfo"]
+
+        if not page_info["hasNextPage"]:
+            break
+
+        cursor = page_info["endCursor"]
+
+
+# ============================================================
+# 3/4. Historical contribution collections
+# ============================================================
+
+def get_contribution_years():
+
+    query = """
+    query($login: String!) {
+
+      user(login: $login) {
+
+        contributionsCollection {
+          contributionYears
+        }
+
+      }
+
+    }
+    """
+
+    data = graphql(
+        query,
+        {
+            "login": USERNAME,
+        },
     )
 
+    return data[
+        "user"
+    ][
+        "contributionsCollection"
+    ][
+        "contributionYears"
+    ]
+
+
+def discover_historical_contributions():
+
+    years = get_contribution_years()
+
+    print()
+    print(
+        "Contribution years:",
+        years,
+    )
+
+    query = """
+    query(
+        $login: String!,
+        $from: DateTime!,
+        $to: DateTime!
+    ) {
+
+      user(login: $login) {
+
+        contributionsCollection(
+          from: $from,
+          to: $to
+        ) {
+
+          commitContributionsByRepository(
+            maxRepositories: 100
+          ) {
+
+            repository {
+
+              nameWithOwner
+              isPrivate
+
+              owner {
+                login
+              }
+
+              defaultBranchRef {
+                name
+              }
+
+            }
+
+          }
+
+          pullRequestContributionsByRepository(
+            maxRepositories: 100
+          ) {
+
+            repository {
+
+              nameWithOwner
+              isPrivate
+
+              owner {
+                login
+              }
+
+              defaultBranchRef {
+                name
+              }
+
+            }
+
+          }
+
+        }
+
+      }
+
+    }
+    """
+
+    for year in years:
+
+        print(
+            f"Checking historical contributions "
+            f"for {year}..."
+        )
+
+        data = graphql(
+            query,
+            {
+                "login": USERNAME,
+                "from": (
+                    f"{year}-01-01T00:00:00Z"
+                ),
+                "to": (
+                    f"{year}-12-31T23:59:59Z"
+                ),
+            },
+        )
+
+        collection = data[
+            "user"
+        ][
+            "contributionsCollection"
+        ]
+
+        for item in collection[
+            "commitContributionsByRepository"
+        ]:
+
+            repo = item["repository"]
+
+            if repo["isPrivate"]:
+                continue
+
+            branch = repo.get(
+                "defaultBranchRef"
+            )
+
+            if not branch:
+                continue
+
+            add_candidate_repo(
+                name=repo["nameWithOwner"],
+                owner=repo["owner"]["login"],
+                branch=branch["name"],
+                source="historical_commit_contribution",
+                year=year,
+            )
+
+        for item in collection[
+            "pullRequestContributionsByRepository"
+        ]:
+
+            repo = item["repository"]
+
+            if repo["isPrivate"]:
+                continue
+
+            branch = repo.get(
+                "defaultBranchRef"
+            )
+
+            if not branch:
+                continue
+
+            add_candidate_repo(
+                name=repo["nameWithOwner"],
+                owner=repo["owner"]["login"],
+                branch=branch["name"],
+                source="historical_pr_contribution",
+                year=year,
+            )
+
 
 # ============================================================
-# Get the files that CURRENTLY exist in the repository
+# Run repository discovery
 # ============================================================
 
-def get_current_files(
-    repo_name,
-    tree_oid,
-):
+discover_owned_public_repositories()
+
+discover_repositories_contributed_to()
+
+discover_historical_contributions()
+
+
+print()
+print(
+    f"Found {len(repos)} candidate "
+    f"public repositories."
+)
+
+
+# ============================================================
+# Get ALL current branches of a repository
+#
+# We scan all current branches rather than only main/master.
+#
+# This matters if your authored commits live on a feature
+# branch and are not directly reachable from the default branch.
+# ============================================================
+
+def get_branches(repo_name):
 
     encoded_repo = encoded_repo_name(
         repo_name
     )
 
-    data = github_rest(
-        f"/repos/{encoded_repo}/git/trees/"
-        f"{tree_oid}",
-        {
-            "recursive": "1",
-        },
-    )
+    branches = []
 
-    if data.get("truncated"):
+    page = 1
 
-        print(
-            "WARNING: repository tree "
-            f"was truncated for {repo_name}"
+    while True:
+
+        data = github_rest(
+            f"/repos/{encoded_repo}/branches",
+            {
+                "per_page": 100,
+                "page": page,
+            },
         )
 
-    current_files = set()
+        if not data:
+            break
 
-    for item in data.get(
-        "tree",
-        [],
-    ):
+        branches.extend(
+            branch["name"]
+            for branch in data
+        )
 
-        if item.get("type") != "blob":
-            continue
+        if len(data) < 100:
+            break
 
-        path = item["path"]
+        page += 1
 
-        if file_language(path) is None:
-            continue
-
-        current_files.add(path)
-
-    return current_files
+    return branches
 
 
 # ============================================================
-# Find commits authored by ME on the default branch
+# Find commits authored by ME on one branch
 # ============================================================
 
-def get_my_commits(
+def get_my_commits_on_branch(
     repo_name,
     branch,
 ):
@@ -513,7 +723,82 @@ def get_my_commits(
 
 
 # ============================================================
-# Get files changed in one commit
+# Find ALL unique commits authored by me that are reachable
+# from at least one current branch.
+#
+# The same commit can appear on many branches, therefore
+# commits are deduplicated by SHA.
+# ============================================================
+
+def get_all_my_commits(
+    repo_name,
+    default_branch,
+):
+
+    branches = get_branches(
+        repo_name
+    )
+
+    # Safety: make sure the default branch is included.
+    if (
+        default_branch
+        and default_branch not in branches
+    ):
+        branches.append(
+            default_branch
+        )
+
+    commit_map = {}
+
+    print(
+        f"  scanning {len(branches)} "
+        f"branch(es)"
+    )
+
+    for branch in branches:
+
+        try:
+
+            commits = (
+                get_my_commits_on_branch(
+                    repo_name,
+                    branch,
+                )
+            )
+
+        except urllib.error.HTTPError as exc:
+
+            print(
+                f"    WARNING: could not read "
+                f"branch {branch}: HTTP {exc.code}"
+            )
+
+            continue
+
+        if commits:
+
+            print(
+                f"    {branch}: "
+                f"{len(commits)} matching commit(s)"
+            )
+
+        for commit in commits:
+
+            commit_map[
+                commit["sha"]
+            ] = commit
+
+    return (
+        list(commit_map.values()),
+        branches,
+    )
+
+
+# ============================================================
+# Files changed by one commit
+#
+# GitHub's commit endpoint returns its changed-file list.
+# It may be paginated for large commits.
 # ============================================================
 
 def get_commit_files(
@@ -557,34 +842,40 @@ def get_commit_files(
 
 
 # ============================================================
-# Find UNIQUE current source files touched by my commits
+# Find unique source-file paths touched by my commits
+#
+# IMPORTANT:
+#
+# - Same file edited 50 times -> counted once
+# - Same commit reachable from 5 branches -> counted once
+# - Same file path in two different repos -> one file per repo
+#
+# We use "filename", not "previous_filename", so a rename
+# does not automatically count both old and new names from
+# the same rename record.
 # ============================================================
 
 def get_my_source_files(
     repo_name,
-    branch,
-    tree_oid,
+    default_branch,
 ):
 
-    current_files = get_current_files(
-        repo_name,
-        tree_oid,
-    )
-
-    my_commits = get_my_commits(
-        repo_name,
-        branch,
+    commits, branches = (
+        get_all_my_commits(
+            repo_name,
+            default_branch,
+        )
     )
 
     print(
-        f"  {len(my_commits)} commits "
-        f"authored by {USERNAME}"
+        f"  unique authored commits: "
+        f"{len(commits)}"
     )
 
-    touched_paths = set()
+    touched_files = set()
 
     for i, commit in enumerate(
-        my_commits,
+        commits,
         start=1,
     ):
 
@@ -592,14 +883,26 @@ def get_my_source_files(
 
         print(
             f"    commit "
-            f"{i}/{len(my_commits)} "
+            f"{i}/{len(commits)} "
             f"{sha[:8]}"
         )
 
-        files = get_commit_files(
-            repo_name,
-            sha,
-        )
+        try:
+
+            files = get_commit_files(
+                repo_name,
+                sha,
+            )
+
+        except urllib.error.HTTPError as exc:
+
+            print(
+                f"      WARNING: commit "
+                f"could not be read: "
+                f"HTTP {exc.code}"
+            )
+
+            continue
 
         for file_info in files:
 
@@ -607,76 +910,118 @@ def get_my_source_files(
                 "filename"
             )
 
-            if filename:
-                touched_paths.add(
-                    filename
-                )
+            if not filename:
+                continue
 
-            # A renamed file may have both paths.
-            previous = file_info.get(
-                "previous_filename"
+            if file_language(
+                filename
+            ) is None:
+                continue
+
+            touched_files.add(
+                filename
             )
 
-            if previous:
-                touched_paths.add(
-                    previous
-                )
-
-    # --------------------------------------------------------
-    # Keep only files that:
-    #
-    # 1. I touched
-    # 2. still exist on the current default branch
-    # 3. are recognized source-code files
-    #
-    # This also removes historical/deleted file paths.
-    # --------------------------------------------------------
-
-    my_current_files = (
-        touched_paths
-        & current_files
-    )
-
     return (
-        my_current_files,
-        len(my_commits),
+        touched_files,
+        commits,
+        branches,
     )
 
 
 # ============================================================
-# Build personal file-language statistics
+# Process every candidate repository
 # ============================================================
 
 overall_file_counts = Counter()
 
-result_repos = []
+all_repo_results = []
 
 
-for repo in repos.values():
+for repo_name in sorted(
+    repos.keys(),
+    key=str.lower,
+):
+
+    repo = repos[
+        repo_name
+    ]
 
     print()
+    print("=" * 70)
     print(
-        "Processing "
-        f"{repo['name']}..."
+        f"Processing {repo_name}"
+    )
+    print("=" * 70)
+
+    external = (
+        repo["owner"].lower()
+        != USERNAME.lower()
     )
 
-    my_files, commit_count = (
-        get_my_source_files(
-            repo["name"],
+    result = {
+        "repository":
+            repo_name,
+
+        "owner":
+            repo["owner"],
+
+        "external":
+            external,
+
+        "default_branch":
             repo["branch"],
-            repo["tree_oid"],
+
+        "discovery_sources":
+            sorted(
+                repo[
+                    "discovery_sources"
+                ]
+            ),
+
+        "contribution_years":
+            sorted(
+                repo["years"]
+            ),
+
+        "branches_scanned":
+            [],
+
+        "my_commits_found":
+            0,
+
+        "my_source_files":
+            {},
+
+        "total_my_source_files":
+            0,
+
+        "my_source_file_paths":
+            [],
+
+        "status":
+            "pending",
+    }
+
+    try:
+
+        my_files, my_commits, branches = (
+            get_my_source_files(
+                repo_name,
+                repo["branch"],
+            )
         )
-    )
 
-    repo_counts = Counter()
+        repo_counts = Counter()
 
-    for path in my_files:
+        for path in my_files:
 
-        language = file_language(
-            path
-        )
+            language = file_language(
+                path
+            )
 
-        if language is not None:
+            if language is None:
+                continue
 
             repo_counts[
                 language
@@ -686,62 +1031,85 @@ for repo in repos.values():
                 language
             ] += 1
 
-    external = (
-        repo["owner"].lower()
-        != USERNAME.lower()
+        result[
+            "branches_scanned"
+        ] = sorted(branches)
+
+        result[
+            "my_commits_found"
+        ] = len(my_commits)
+
+        result[
+            "my_source_files"
+        ] = dict(
+            repo_counts.most_common()
+        )
+
+        result[
+            "total_my_source_files"
+        ] = len(my_files)
+
+        result[
+            "my_source_file_paths"
+        ] = sorted(my_files)
+
+        if my_files:
+
+            result[
+                "status"
+            ] = "counted"
+
+        elif my_commits:
+
+            result[
+                "status"
+            ] = (
+                "commits_found_but_no_"
+                "recognized_source_files"
+            )
+
+        else:
+
+            result[
+                "status"
+            ] = (
+                "no_authored_commits_"
+                "found_on_current_branches"
+            )
+
+    except urllib.error.HTTPError as exc:
+
+        result["status"] = (
+            f"http_error_{exc.code}"
+        )
+
+        print(
+            f"WARNING: HTTP {exc.code} "
+            f"while processing {repo_name}"
+        )
+
+    except Exception as exc:
+
+        result["status"] = (
+            f"error: {exc}"
+        )
+
+        print(
+            f"WARNING: {exc}"
+        )
+
+    all_repo_results.append(
+        result
     )
-
-    result_repos.append({
-        "repository":
-            repo["name"],
-
-        "owner":
-            repo["owner"],
-
-        "external":
-            external,
-
-        "branch":
-            repo["branch"],
-
-        "years":
-            sorted(
-                repo["years"]
-            ),
-
-        "my_commits_on_default_branch":
-            commit_count,
-
-        "my_source_files":
-            dict(
-                repo_counts.most_common()
-            ),
-
-        "total_my_source_files":
-            len(my_files),
-
-        # Useful for checking that the script
-        # really counted only files you touched.
-        "my_source_file_paths":
-            sorted(my_files),
-    })
-
-
-result_repos.sort(
-    key=lambda x: (
-        not x["external"],
-        x["repository"].lower(),
-    )
-)
 
 
 # ============================================================
-# Remove repositories where no qualifying source file was found
+# Repositories actually represented in the card
 # ============================================================
 
-result_repos_with_files = [
+counted_repos = [
     repo
-    for repo in result_repos
+    for repo in all_repo_results
     if repo[
         "total_my_source_files"
     ] > 0
@@ -749,43 +1117,60 @@ result_repos_with_files = [
 
 
 # ============================================================
-# Save audit JSON
+# Save detailed audit JSON
+#
+# IMPORTANT:
+#
+# We save ALL candidates here, including repos with zero
+# counted files. This lets us diagnose why a repo disappeared.
 # ============================================================
+
+audit = {
+    "username":
+        USERNAME,
+
+    "definition":
+        (
+            "Unique recognized source-file paths touched "
+            "by commits authored by the user in public "
+            "repositories. Commits are searched across all "
+            "current repository branches and deduplicated "
+            "by commit SHA. File paths are deduplicated "
+            "within each repository."
+        ),
+
+    "candidate_repository_count":
+        len(all_repo_results),
+
+    "counted_repository_count":
+        len(counted_repos),
+
+    "repositories":
+        all_repo_results,
+
+    "overall_file_counts":
+        dict(
+            overall_file_counts
+            .most_common()
+        ),
+}
+
 
 with open(
     OUT / "contributed-file-repos.json",
     "w",
+    encoding="utf-8",
 ) as f:
 
     json.dump(
-        {
-            "username":
-                USERNAME,
-
-            "definition":
-                (
-                    "Unique current source files "
-                    "on public default branches "
-                    "touched by commits authored "
-                    "by the user."
-                ),
-
-            "repositories":
-                result_repos_with_files,
-
-            "overall_file_counts":
-                dict(
-                    overall_file_counts
-                    .most_common()
-                ),
-        },
+        audit,
         f,
         indent=2,
     )
 
 
 # ============================================================
-# Prepare SVG
+# SVG data
 # ============================================================
 
 total_files = sum(
@@ -793,19 +1178,23 @@ total_files = sum(
 )
 
 repo_count = len(
-    result_repos_with_files
+    counted_repos
 )
 
 external_repo_count = sum(
-    repo["external"]
-    for repo in result_repos_with_files
+    1
+    for repo in counted_repos
+    if repo["external"]
 )
 
 
 MAX_LANGUAGES = 8
 
-ranked = overall_file_counts.most_common(
-    MAX_LANGUAGES
+ranked = (
+    overall_file_counts
+    .most_common(
+        MAX_LANGUAGES
+    )
 )
 
 
@@ -819,6 +1208,10 @@ HEIGHT = max(
     * len(ranked),
 )
 
+
+# ============================================================
+# SVG text helper
+# ============================================================
 
 def txt(
     x,
@@ -844,6 +1237,10 @@ def txt(
     >{value}</text>
     """
 
+
+# ============================================================
+# Build SVG
+# ============================================================
 
 svg = f"""
 <svg
@@ -910,26 +1307,30 @@ if total_files > 0:
             * BAR_WIDTH
         )
 
-        color = LANGUAGE_COLORS.get(
-            language,
-            "#8c959f",
+        color = (
+            LANGUAGE_COLORS.get(
+                language,
+                "#8c959f",
+            )
         )
 
         svg += f"""
         <rect
-            x="{position}"
+            x="{position:.2f}"
             y="{BAR_Y}"
-            width="{segment_width}"
+            width="{segment_width:.2f}"
             height="{BAR_HEIGHT}"
             fill="{color}"
         />
         """
 
-        position += segment_width
+        position += (
+            segment_width
+        )
 
 
 # ============================================================
-# Language list
+# Language rows
 # ============================================================
 
 y = 125
@@ -948,9 +1349,11 @@ else:
 
     for language, count in ranked:
 
-        color = LANGUAGE_COLORS.get(
-            language,
-            "#8c959f",
+        color = (
+            LANGUAGE_COLORS.get(
+                language,
+                "#8c959f",
+            )
         )
 
         percent = (
@@ -1008,21 +1411,26 @@ svg += "</svg>"
 with open(
     OUT / "contributed-file-languages.svg",
     "w",
+    encoding="utf-8",
 ) as f:
 
     f.write(svg)
 
 
 # ============================================================
-# Console output
+# Console summary
 # ============================================================
 
 print()
-print("=" * 60)
-print("MY CONTRIBUTED SOURCE FILES")
-print("=" * 60)
+print()
+print("=" * 70)
+print("PERSONAL SOURCE-FILE CONTRIBUTION SUMMARY")
+print("=" * 70)
 
-for repo in result_repos_with_files:
+
+for repo in all_repo_results:
+
+    print()
 
     tag = (
         "EXTERNAL"
@@ -1030,19 +1438,28 @@ for repo in result_repos_with_files:
         else "OWN"
     )
 
-    print()
     print(
         f"{tag}: "
         f"{repo['repository']}"
     )
 
     print(
-        "  My commits: "
-        f"{repo['my_commits_on_default_branch']}"
+        "  status: "
+        f"{repo['status']}"
     )
 
     print(
-        "  My source files: "
+        "  branches scanned: "
+        f"{len(repo['branches_scanned'])}"
+    )
+
+    print(
+        "  my commits found: "
+        f"{repo['my_commits_found']}"
+    )
+
+    print(
+        "  my source files: "
         f"{repo['total_my_source_files']}"
     )
 
@@ -1059,14 +1476,17 @@ for repo in result_repos_with_files:
 
 
 print()
-print("Overall:")
+print("-" * 70)
+print("OVERALL")
+print("-" * 70)
+
 
 for language, count in (
     overall_file_counts
     .most_common()
 ):
 
-    percent = (
+    percentage = (
         100
         * count
         / total_files
@@ -1075,11 +1495,32 @@ for language, count in (
     )
 
     print(
-        f"  {language:20s} "
-        f"{count:4d} files "
-        f"{percent:6.2f}%"
+        f"{language:20s} "
+        f"{count:5d} files "
+        f"{percentage:6.2f}%"
     )
 
+
+print()
+print(
+    f"Candidate repositories: "
+    f"{len(all_repo_results)}"
+)
+
+print(
+    f"Repositories counted: "
+    f"{repo_count}"
+)
+
+print(
+    f"External repositories counted: "
+    f"{external_repo_count}"
+)
+
+print(
+    f"Total unique source files: "
+    f"{total_files}"
+)
 
 print()
 print(
