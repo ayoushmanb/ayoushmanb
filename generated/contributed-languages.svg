@@ -38,37 +38,37 @@
     >5 public repositories · 1 owned by others</text>
     
 
-    <rect
-        x="24"
-        y="80"
-        width="268.2"
-        height="10"
-        fill="#198CE7"
-    />
-    
-    <rect
-        x="292.2"
-        y="80"
-        width="89.4"
-        height="10"
-        fill="#3572A5"
-    />
-    
-    <rect
-        x="381.6"
-        y="80"
-        width="89.4"
-        height="10"
-        fill="#e16737"
-    />
-    
-    <circle
-        cx="29"
-        cy="121"
-        r="5"
-        fill="#198CE7"
-    />
-    
+        <rect
+            x="24.00"
+            y="80"
+            width="268.20"
+            height="10"
+            fill="#198CE7"
+        />
+        
+        <rect
+            x="292.20"
+            y="80"
+            width="89.40"
+            height="10"
+            fill="#e16737"
+        />
+        
+        <rect
+            x="381.60"
+            y="80"
+            width="89.40"
+            height="10"
+            fill="#3572A5"
+        />
+        
+        <circle
+            cx="29"
+            cy="121"
+            r="5"
+            fill="#198CE7"
+        />
+        
     <text
         x="44"
         y="125"
@@ -96,13 +96,13 @@
         fill="#656d76"
     >60.0%</text>
     
-    <circle
-        cx="29"
-        cy="151"
-        r="5"
-        fill="#3572A5"
-    />
-    
+        <circle
+            cx="29"
+            cy="151"
+            r="5"
+            fill="#e16737"
+        />
+        
     <text
         x="44"
         y="155"
@@ -110,7 +110,7 @@
         font-size="13"
         font-weight="600"
         fill="#24292f"
-    >Python</text>
+    >MATLAB</text>
     
     <text
         x="290"
@@ -130,13 +130,13 @@
         fill="#656d76"
     >20.0%</text>
     
-    <circle
-        cx="29"
-        cy="181"
-        r="5"
-        fill="#e16737"
-    />
-    
+        <circle
+            cx="29"
+            cy="181"
+            r="5"
+            fill="#3572A5"
+        />
+        
     <text
         x="44"
         y="185"
@@ -144,7 +144,7 @@
         font-size="13"
         font-weight="600"
         fill="#24292f"
-    >MATLAB</text>
+    >Python</text>
     
     <text
         x="290"

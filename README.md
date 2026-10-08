@@ -27,7 +27,7 @@ Here is the link to my personal profile [https://sites.google.com/view/ayoushman
   />
 </p>
 
-![](./generated/contributed-languages.svg?v=37637639232)
+![](./generated/contributed-languages.svg?v=37774242056)
 ![](./generated/contributed-file-languages.svg?v=37637836367)
 
 ## Repository Overview 🗂️
