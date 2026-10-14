@@ -6,8 +6,10 @@ Here is the link to my personal profile [https://sites.google.com/view/ayoushman
 <!-- 
 ![Profile Views](https://komarev.com/ghpvc/?username=ayoushmanb&color=green&style=flat-square&v=2) 
 ![Profile Views](https://views.igorkowalczyk.dev/api/badge/ayoushmanb?color=green&style=flat) 
--->
 ![Profile Views](https://komarev.com/ghpvc/?username=ayoushmanb&label=Profile+Views&color=green&style=flat-square&v=3)
+-->
+![Profile Views](https://views.igorkowalczyk.dev/api/badge/ayoushmanb?label=Profile+Views&color=green&style=flat)
+
 
 
 
