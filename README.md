@@ -1,6 +1,6 @@
 ## Hi there 👋
 
-I am Ayoushman Bhattacharya, a PhD Candidate at the [Department of Statistics and Data Science](https://sds.wustl.edu/), Washingtion University in St. Louis. 
+I am Ayoushman Bhattacharya, a PhD Candidate at the [Department of Statistics and Data Science](https://sds.wustl.edu/), Washington University in St. Louis. 
 Here is the link to my personal profile [https://sites.google.com/view/ayoushmanb](https://sites.google.com/view/ayoushmanb).
 
 ![](https://komarev.com/ghpvc/?username=ayoushmanb&color=green)
