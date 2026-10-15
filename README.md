@@ -3,13 +3,15 @@
 I am Ayoushman Bhattacharya, a PhD Candidate at the [Department of Statistics and Data Science](https://sds.wustl.edu/), Washington University in St. Louis. 
 Here is the link to my personal profile [https://sites.google.com/view/ayoushmanb](https://sites.google.com/view/ayoushmanb).
 
-<!-- 
+
 ![Profile Views](https://komarev.com/ghpvc/?username=ayoushmanb&color=green&style=flat-square&v=2) 
+
+<!-- 
 ![Profile Views](https://views.igorkowalczyk.dev/api/badge/ayoushmanb?color=green&style=flat) 
 ![Profile Views](https://komarev.com/ghpvc/?username=ayoushmanb&label=Profile+Views&color=green&style=flat-square&v=3)
--->
-![Profile Views](https://views.igorkowalczyk.dev/api/badge/ayoushmanb?label=Profile+Views&color=blue&style=flat&labelColor=blue)
 
+![Profile Views](https://views.igorkowalczyk.dev/api/badge/ayoushmanb?label=Profile+Views&color=blue&style=flat&labelColor=blue)
+-->
 
 
 
