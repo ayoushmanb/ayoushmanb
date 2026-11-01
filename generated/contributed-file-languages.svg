@@ -35,29 +35,29 @@
         font-size="11"
         font-weight="400"
         fill="#656d76"
-    >158 source files across 5 public repositories · 1 owned by others</text>
+    >191 source files across 5 public repositories · 1 owned by others</text>
     
 
         <rect
             x="24.00"
             y="80"
-            width="257.45"
-            height="10"
-            fill="#198CE7"
-        />
-        
-        <rect
-            x="281.45"
-            y="80"
-            width="183.89"
+            width="229.35"
             height="10"
             fill="#e16737"
         />
         
         <rect
-            x="465.34"
+            x="253.35"
             y="80"
-            width="5.66"
+            width="212.97"
+            height="10"
+            fill="#198CE7"
+        />
+        
+        <rect
+            x="466.32"
+            y="80"
+            width="4.68"
             height="10"
             fill="#3572A5"
         />
@@ -66,46 +66,12 @@
             cx="29"
             cy="121"
             r="5"
-            fill="#198CE7"
-        />
-        
-    <text
-        x="44"
-        y="125"
-        font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
-        font-size="13"
-        font-weight="600"
-        fill="#24292f"
-    >R</text>
-    
-    <text
-        x="290"
-        y="125"
-        font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
-        font-size="12"
-        font-weight="400"
-        fill="#656d76"
-    >91 files</text>
-    
-    <text
-        x="390"
-        y="125"
-        font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
-        font-size="12"
-        font-weight="400"
-        fill="#656d76"
-    >57.6%</text>
-    
-        <circle
-            cx="29"
-            cy="151"
-            r="5"
             fill="#e16737"
         />
         
     <text
         x="44"
-        y="155"
+        y="125"
         font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
         font-size="13"
         font-weight="600"
@@ -114,12 +80,46 @@
     
     <text
         x="290"
+        y="125"
+        font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
+        font-size="12"
+        font-weight="400"
+        fill="#656d76"
+    >98 files</text>
+    
+    <text
+        x="390"
+        y="125"
+        font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
+        font-size="12"
+        font-weight="400"
+        fill="#656d76"
+    >51.3%</text>
+    
+        <circle
+            cx="29"
+            cy="151"
+            r="5"
+            fill="#198CE7"
+        />
+        
+    <text
+        x="44"
+        y="155"
+        font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
+        font-size="13"
+        font-weight="600"
+        fill="#24292f"
+    >R</text>
+    
+    <text
+        x="290"
         y="155"
         font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif"
         font-size="12"
         font-weight="400"
         fill="#656d76"
-    >65 files</text>
+    >91 files</text>
     
     <text
         x="390"
@@ -128,7 +128,7 @@
         font-size="12"
         font-weight="400"
         fill="#656d76"
-    >41.1%</text>
+    >47.6%</text>
     
         <circle
             cx="29"
@@ -162,5 +162,5 @@
         font-size="12"
         font-weight="400"
         fill="#656d76"
-    >1.3%</text>
+    >1.0%</text>
     </svg>
